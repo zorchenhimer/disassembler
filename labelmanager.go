@@ -35,11 +35,6 @@ func NewLabelManager(global []*types.Label, banks []*types.Bank, windows []*type
 	}
 
 	for _, win := range windows {
-		//wc := &WindowConfig{
-		//	Name: win.Name,
-		//	Bank: nil,
-		//}
-
 		lm.Windows[win.Name] = nil
 
 		if win.Init != "" {
@@ -55,11 +50,6 @@ func NewLabelManager(global []*types.Label, banks []*types.Bank, windows []*type
 
 	return lm
 }
-
-//type WindowConfig struct {
-//	Name string
-//	Bank *Bank
-//}
 
 func (lm *LabelManager) SetWindow(winName, bankName string) {
 	b, ok := lm.Banks[bankName]
@@ -90,19 +80,8 @@ func (lm *LabelManager) GetLabel(addr uint) *types.Label {
 	if ok && bank != nil {
 		return bank.Labels[addr]
 	}
+
 	return nil
-
-	//for _, win := range lm.Windows {
-	//	if win.Bank == nil {
-	//		continue
-	//	}
-
-	//	if win.Bank.Address <= addr && addr < win.Bank.Address + win.Bank.Size {
-	//		return win.Bank.Labels[addr]
-	//	}
-	//}
-
-	//return nil
 }
 
 // for autolabels only
@@ -128,48 +107,15 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 		return
 	}
 
-	//if bank == nil {
-	//	panic("[SetLabel] nil bank")
-	//}
 	// do not overwrite labels
 	_, ok = bank.Labels[lbl.Address]
 	if ok {
 		return
 	}
 	bank.Labels[lbl.Address] = lbl
-
-	//_, ok = lm.Bank.Labels[lbl.Address]
-	//if !ok {
-	//	lm.Bank.Labels[lbl.Address] = lbl
-	//}
-
-	//for _, win := range lm.Windows {
-	//	if win.Bank == nil {
-	//		continue
-	//	}
-
-	//	if win.Bank.Address <= addr && addr < win.Bank.Address + win.Bank.Size {
-	//		_, ok := win.Bank.Labels[addr]
-	//		if !ok {
-	//			win.Bank.Labels[addr] = lbl
-	//			return
-	//		}
-	//	}
-	//}
 }
 
 func (lm *LabelManager) GetRange(addr uint) *types.Range {
-	//for _, win := range lm.Windows {
-	//	if win.Bank == nil {
-	//		continue
-	//	}
-
-	//	if win.Bank.Address <= addr && addr < win.Bank.Address + win.Bank.Size {
-	//		return win.Bank.Ranges[addr]
-	//	}
-	//}
-	//return nil
-
 	win, ok := lm.WindowAddrs[addr]
 	if !ok {
 		return nil
@@ -182,17 +128,3 @@ func (lm *LabelManager) GetRange(addr uint) *types.Range {
 
 	return bank.Ranges[addr]
 }
-
-//type WindowManager struct {
-//	State map[uint]*WindowState
-//}
-//
-//type WindowState struct {
-//	Bank *Bank
-//}
-//
-//func (w *WindowManager) SetLabel(lbl *Label) {
-//}
-//
-//func (w *WindowManager) GetLabel(address uint) *Label {
-//}

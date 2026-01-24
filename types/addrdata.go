@@ -3,8 +3,6 @@ package types
 import (
 	"fmt"
 	"strings"
-
-	//"git.zorchenhimer.com/Zorchenhimer/dasm/instructions"
 )
 
 type Decoded struct {
@@ -22,12 +20,6 @@ func (d Decoded) GoString() string {
 	}
 
 	return fmt.Sprintf("Decoded{Instr:<nil> Raw:%v", d.Raw)
-}
-
-type LabelManager interface {
-	GetLabel(addr uint) *Label
-	SetLabel(lbl *Label)
-	GetRange(addr uint) *Range
 }
 
 func (d Decoded) Asm(addr uint, labels LabelManager) string {
@@ -61,7 +53,6 @@ func (di DecodedInstr) Asm(addr uint, labels LabelManager) string {
 		rawstr = append(rawstr, fmt.Sprintf("%02X", r))
 	}
 
-	// TODO: proper label management
 	var lbl *Label
 	switch di.Instr.AddrMode {
 	case AddrMode_Accumulator,

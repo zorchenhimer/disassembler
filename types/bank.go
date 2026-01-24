@@ -30,10 +30,6 @@ type Bank struct {
 	Decoded map[uint]*Decoded
 
 	AutoLabels map[uint]*Label
-
-	// currently mapped windows.  key is address
-	// (expanded like lables and ranges)
-	Windows map[uint]*Bank
 }
 
 func NewBank() *Bank {
@@ -82,7 +78,6 @@ func (b *Bank) Type(address uint) RangeType {
 func (b *Bank) GoString() string {
 	labels  := []string{}
 	ranges  := []string{}
-	windows := []string{}
 
 	for _, itm := range b.CfgLabels {
 		labels = append(labels, fmt.Sprintf("%#v", itm))
@@ -92,11 +87,7 @@ func (b *Bank) GoString() string {
 		ranges = append(ranges, fmt.Sprintf("%#v", itm))
 	}
 
-	for _, itm := range b.CfgWindows {
-		windows = append(windows, fmt.Sprintf("%#v", itm))
-	}
-
-	return fmt.Sprintf("{Bank Name:%q Output:%q Offset:%d Address:%d Size:%d Labels:[%s] Ranges:[%s] Windows:[%s]}",
+	return fmt.Sprintf("{Bank Name:%q Output:%q Offset:%d Address:%d Size:%d Labels:[%s] Ranges:[%s]}",
 		b.Name,
 		b.Output,
 		b.Offset,
@@ -104,7 +95,6 @@ func (b *Bank) GoString() string {
 		b.Size,
 		strings.Join(labels, ", "),
 		strings.Join(ranges, ", "),
-		strings.Join(windows, ", "),
 	)
 }
 
@@ -114,27 +104,6 @@ func (b *Bank) String() string {
 	}
 
 	return fmt.Sprintf("at offset $%X", b.Offset)
-}
-
-// TODO: figure out how the windows will be looked up on the consumption end.
-func (b *Bank) setupWindows(defs []*WindowDef, banks []*Bank) error {
-	//defNames := make(map[string]*WindowDef)
-	//for _, def := range defs {
-	//	defNames[def.Name] = def
-	//}
-
-	//for _, swap := range b.CfgWindows {
-	//	for _, bank := range banks {
-	//		if swap.Bank == bank.Name {
-	//			swap.bnk = bank
-	//		}
-	//	}
-	//}
-
-	//for _, swap := range b.CfgWindows {
-	//	b.Windows[swap.Address] = swap.bnk
-	//}
-	return nil
 }
 
 func (b *Bank) verify() error {

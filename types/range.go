@@ -60,10 +60,6 @@ func (r *Range) Verify(begin, end uint) error {
 		return fmt.Errorf("Addresses out of range (too low)")
 	}
 
-	//if r.Size < 0 {
-	//	return fmt.Errorf("Size cannot be negative")
-	//}
-
 	if r.Stride < 0 {
 		return fmt.Errorf("Stride cannot be negative")
 	}

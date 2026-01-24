@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+type LabelManager interface {
+	GetLabel(addr uint) *Label
+	SetLabel(lbl *Label)
+	GetRange(addr uint) *Range
+}
+
 type Label struct {
 	Name    string
 	Comment string
@@ -27,10 +33,6 @@ func NewLabel(address uint, name string) *Label {
 }
 
 func (lbl *Label) Verify(begin, end uint) error {
-	//if lbl.Address < 0 {
-	//	return fmt.Errorf("Addresses cannot be negative")
-	//}
-
 	if lbl.Address > 0xFFFF {
 		return fmt.Errorf("Addresses cannot be larger than $FFFF")
 	}
