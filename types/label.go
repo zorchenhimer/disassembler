@@ -34,28 +34,28 @@ func NewLabel(address uint, name string) *Label {
 
 func (lbl *Label) Verify(begin, end uint) error {
 	if lbl.Address > 0xFFFF {
-		return fmt.Errorf("Addresses cannot be larger than $FFFF")
+		return fmt.Errorf("Addresses cannot be larger than $FFFF: %#v", lbl)
 	}
 
 	if lbl.Address < begin {
-		return fmt.Errorf("Addresses out of range (too low)")
+		return fmt.Errorf("Addresses out of range (too low): %#v", lbl)
 	}
 
 	if lbl.Size < 0 {
-		return fmt.Errorf("Size cannot be negative")
+		return fmt.Errorf("Size cannot be negative: %#v", lbl)
 	}
 
 	if lbl.Size + lbl.Address - 1 > 0xFFFF {
-		return fmt.Errorf("Size goes beyond $FFFF")
+		return fmt.Errorf("Size goes beyond $FFFF: %#v", lbl)
 	}
 
 	if lbl.Size + lbl.Address > end {
-		return fmt.Errorf("Addresses out of range (too high)")
+		return fmt.Errorf("Addresses out of range (too high): %#v", lbl)
 	}
 
 	if strings.TrimSpace(lbl.Name) == "" && 
 	   strings.TrimSpace(lbl.Comment) == "" {
-		return fmt.Errorf("Name and Command cannot both be empty")
+		   return fmt.Errorf("Name and Command cannot both be empty: %#v", lbl)
 	}
 
 	if strings.TrimSpace(lbl.Comment) != "" {

@@ -13,11 +13,11 @@ func Instr6502(name string, addr types.AddrMode) *types.Instruction {
 	switch addr {
 	case types.AddrMode_Accumulator, types.AddrMode_Implied:
 		ac = 0
-	case types.AddrMode_Immediate, types.AddrMode_Relative, types.AddrMode_ZeroPage,
-		 types.AddrMode_ZeroPageX, types.AddrMode_ZeroPageY:
+	case types.AddrMode_Immediate, types.AddrMode_Relative,
+		 types.AddrMode_Indirect, types.AddrMode_IndirectX, types.AddrMode_IndirectY,
+		 types.AddrMode_ZeroPage, types.AddrMode_ZeroPageX, types.AddrMode_ZeroPageY:
 		ac = 1
-	case types.AddrMode_Absolute, types.AddrMode_AbsoluteX, types.AddrMode_AbsoluteY,
-		 types.AddrMode_Indirect, types.AddrMode_IndirectX, types.AddrMode_IndirectY:
+	case types.AddrMode_Absolute, types.AddrMode_AbsoluteX, types.AddrMode_AbsoluteY:
 		ac = 2
 	}
 

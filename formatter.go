@@ -4,15 +4,14 @@ import (
 	"io"
 	"fmt"
 	"strings"
-	"strconv"
+	//"strconv"
 
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
 
 type Formatter struct {
 	Indent int
-	OpWidth int
-	ArgWidth int
+	AsmWidth int
 
 	CommentLevel types.CommentLevel
 
@@ -25,16 +24,17 @@ func NewFormatter(w io.Writer, lm types.LabelManager) *Formatter {
 }
 
 func (f *Formatter) Write(address uint, line types.AsmLine) error {
-	parts := []string{
-		strings.Repeat(" ", f.Indent),
-		line.Op(),
+	parts := []string{}
+	if f.Indent > 0 {
+		parts = append(parts, strings.Repeat(" ", f.Indent-1))
 	}
 
-	parts = append(parts, fmt.Sprintf("%"+strconv.Itoa(f.ArgWidth)+"s", line.ArgStr(f.lm)))
+	parts = append(parts, fmt.Sprintf("%-*s", f.AsmWidth-1, line.Asm(0, f.lm)))
 
+	var err error
 	lbl := f.lm.GetLabel(address)
-	if lbl != nil {
-		_, err := fmt.Fprintln(f.w, lbl.Name+":")
+	if lbl != nil && address == lbl.Address {
+		_, err = fmt.Fprintln(f.w, lbl.Name+":")
 		if err != nil {
 			return err
 		}
@@ -51,6 +51,15 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 		}
 	}
 
-	_, err := fmt.Fprintln(f.w, strings.TrimRight(strings.Join(parts, " "), " "))
+	_, err = fmt.Fprintln(f.w, strings.TrimRight(strings.Join(parts, " "), " "))
+	if err != nil {
+		return err
+	}
+
+	// TODO: figure out proper line count stuff
+	if line.LineCount() > 1 {
+		fmt.Fprintln(f.w, "")
+	}
+
 	return err
 }

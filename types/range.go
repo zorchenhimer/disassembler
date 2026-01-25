@@ -58,26 +58,26 @@ const (
 
 func (r *Range) Verify(begin, end uint) error {
 	if r.Address < begin {
-		return fmt.Errorf("Addresses out of range (too low)")
+		return fmt.Errorf("Addresses out of range (too low): %#v", r)
 	}
 
 	if r.Size == 0 && r.End == 0 {
-		return fmt.Errorf("Range missing size or end")
+		return fmt.Errorf("Range missing size or end: %#v", r)
 	}
 
 	if r.Size != 0 && r.End != 0 {
-		return fmt.Errorf("Range specifies both size and end")
+		return fmt.Errorf("Range specifies both size and end: %#v", r)
 	}
 
 	if r.Size == 0 {
 		if r.End < r.Address {
-			return fmt.Errorf("Range end before address")
+			return fmt.Errorf("Range end before address: %#v", r)
 		}
 		r.Size = r.End - r.Address+1
 	}
 
 	if r.Size + r.Address > end {
-		return fmt.Errorf("Addresses out of range (too high)")
+		return fmt.Errorf("Addresses out of range (too high): %#v", r)
 	}
 
 	if strings.TrimSpace(r.Comment) != "" {

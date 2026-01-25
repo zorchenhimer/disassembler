@@ -28,24 +28,6 @@ func FromConfig(cfg *types.Config) error {
 	lm := NewLabelManager(cfg.Global.Labels, cfg.Banks, cfg.Global.Windows)
 
 	for _, bank := range cfg.Banks {
-		//if bank.Name == "bank_01" {
-		//	verbose = true
-		//}
-
-		dbg, err := os.Create("testdata/"+bank.Name+".dbg")
-		if err != nil {
-			return err
-		}
-
-		//for addr, rng := range bank.Ranges {
-		for i := uint(bank.Address); i < bank.Address + bank.Size; i++ {
-			//fmt.Fprintf(dbg, "$%04X %#v\n", addr, rng)
-			fmt.Fprintf(dbg, "$%04X %s\n", i, bank.Type(i))
-		}
-		dbg.Close()
-
-		//lastoffs := 0
-		//for offs := bank.Offset; offs < bank.Offset + bank.Size ; {
 		for index := uint(0); index < bank.Size ; {
 			// index into raw
 			offset  := index + bank.Offset
@@ -56,9 +38,6 @@ func FromConfig(cfg *types.Config) error {
 					offset, offset, len(raw), len(raw))
 			}
 
-			//decoded := &types.Decoded{
-			//	Type: bank.Type(offs + bank.Address),
-			//}
 			typ := bank.Type(address)
 			var decoded types.AsmLine
 
@@ -99,23 +78,17 @@ func FromConfig(cfg *types.Config) error {
 				lm.SetLabel(types.NewLabel(reladdr, fmt.Sprintf("L%04X", reladdr)))
 
 			default:
-				//bank.AutoLabels[uint(instr.Arg)] = types.NewLabel(uint(instr.Arg), fmt.Sprintf("L%04X", instr.Arg))
 				lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf("L%04X", instr.Arg)))
 			}
 
 			decoded = instr
 
 			for i := uint(0); i < uint(instr.Instr.OpLength + instr.Instr.ArgLength); i++ {
-				//addr := bank.Address+i+(offs-bank.Offset)
 				bank.Decoded[address+i] = decoded
-				//vb("[%04X] %s %#v", addr, decoded.Type, decoded)
 			}
 
-			//fmt.Println(decoded.Asm(offs+bank.Address))
 			index += uint(instr.Instr.OpLength + instr.Instr.ArgLength)
 		}
-
-		fmt.Println("len(bank.Ranges):", len(bank.Ranges))
 
 		// ranges, specifically
 		for index := uint(0); index < bank.Size; {
@@ -136,7 +109,7 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
-			fmt.Printf("processing range [%s:$%04X] %#v\n", bank.Name, address, rng)
+			//fmt.Printf("processing range [%s:$%04X] %#v\n", bank.Name, address, rng)
 			dd := &types.DecodedData{
 				Data: []int{},
 			}
@@ -170,14 +143,16 @@ func FromConfig(cfg *types.Config) error {
 	verbose = false
 	//return nil
 
-	// FIXME: this is borked.  Formatter isn't used and bank.Decoded probably
-	//        has to change up a bit
 	for _, bank := range cfg.Banks {
 		output, err := os.Create(bank.Output)
 		if err != nil {
 			return err
 		}
 		formatter := NewFormatter(output, lm)
+		// TODO: put these in the config
+		formatter.Indent = 4
+		formatter.AsmWidth = 30
+		formatter.CommentLevel = cfg.Global.Comments
 
 		for i := bank.Address; i < bank.Address + bank.Size; {
 			dec := bank.Decoded[i]
@@ -185,10 +160,10 @@ func FromConfig(cfg *types.Config) error {
 				panic(fmt.Sprintf("[%s] %04X+%04X (%X) how in the fuck?", bank.Name, bank.Address, i, bank.Address + bank.Size))
 			}
 			//lbl := bank.Labels[i]
-			lbl := lm.GetLabel(i)
-			if lbl != nil {
-				fmt.Fprintln(output, lbl.Name+":")
-			}
+			//lbl := lm.GetLabel(i)
+			//if lbl != nil {
+			//	fmt.Fprintln(output, lbl.Name+":")
+			//}
 			//fmt.Fprintln(output, dec.Asm(i, lm))
 			formatter.Write(i, dec)
 			i += dec.Length()
@@ -196,24 +171,6 @@ func FromConfig(cfg *types.Config) error {
 
 		output.Close()
 	}
-
-	//for offs := start; offs < end && offs < len(raw); {
-	//	instr := instructions.TryInstr_6502(raw[offs:])
-	//	if instr != nil {
-	//		//fmt.Printf("%s\n", instr.Asm(offs+cfg.Banks[0].Address))
-	//		fmt.Println(asm(uint(offs+cfg.Banks[0].Address), instr, state))
-	//		offs += instr.Instr.Length()
-	//	} else {
-	//		fmt.Printf(".byte $%02X ; %04X %02X\n", raw[offs], offs+cfg.Banks[0].Address, raw[offs])
-	//		//fmt.Printf(".byte $%02X\n", raw[offs])
-	//		offs++
-	//	}
-	//	ttl--
-
-	//	if ttl < 0 {
-	//		return fmt.Errorf("TTL")
-	//	}
-	//}
 
 	return nil
 }
@@ -225,48 +182,3 @@ func vb(format string, args ...any) {
 
 	fmt.Printf(format+"\n", args...)
 }
-
-//func Pass1(cfg *types.Config) 
-
-//func asm(addr uint, instr *instructions.DecodedInstr, st *State) string {
-//	var argstr string
-//	var lbl *types.Label
-//
-//	if instr.Instr.AddrMode == instructions.AddrMode_Relative {
-//		lbl = st.Label(addr+uint(instr.Arg+1))
-//	} else {
-//		lbl = st.Label(uint(addr))
-//	}
-//
-//	if lbl != nil {
-//		argstr = lbl.Name
-//		if uint(lbl.Address) != addr {
-//			offset := int(addr) - lbl.Address
-//			argstr += "+"+strconv.Itoa(offset)
-//		}
-//
-//	} else {
-//		argSize := instr.Instr.AddrMode.ArgSize()
-//
-//		switch argSize {
-//		case 1:
-//			argstr = fmt.Sprintf("$%02X", instr.Arg)
-//		case 2:
-//			argstr = fmt.Sprintf("$%04X", instr.Arg)
-//		}
-//	}
-//
-//	argstr = strings.Replace(
-//		instructions.AddressModeFormats[instr.Instr.AddrMode],
-//		"{{arg}}", argstr, 1)
-//
-//	raw := append([]byte{instr.Opcode}, instr.Args...)
-//	rawstr := []string{}
-//	for _, r := range raw {
-//		rawstr = append(rawstr, fmt.Sprintf("%02X", r))
-//	}
-//
-//	return fmt.Sprintf("%5s %-10s ; %04X %s",
-//		instr.Instr.Name, argstr, addr, rawstr,
-//	)
-//}
