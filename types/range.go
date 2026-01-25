@@ -12,6 +12,7 @@ type Range struct {
 	Address uint
 	//Offset  int
 	Size    uint
+	End     uint
 	Stride  uint // only for byte range
 
 	Type    RangeType
@@ -60,8 +61,19 @@ func (r *Range) Verify(begin, end uint) error {
 		return fmt.Errorf("Addresses out of range (too low)")
 	}
 
-	if r.Stride < 0 {
-		return fmt.Errorf("Stride cannot be negative")
+	if r.Size == 0 && r.End == 0 {
+		return fmt.Errorf("Range missing size or end")
+	}
+
+	if r.Size != 0 && r.End != 0 {
+		return fmt.Errorf("Range specifies both size and end")
+	}
+
+	if r.Size == 0 {
+		if r.End < r.Address {
+			return fmt.Errorf("Range end before address")
+		}
+		r.Size = r.End - r.Address+1
 	}
 
 	if r.Size + r.Address > end {

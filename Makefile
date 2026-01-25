@@ -5,7 +5,7 @@ run: all
 	bin/dasm testdata/sbx.cfg
 
 clean:
-	-rm bin/*
+	-rm bin/* testdata/*.asm
 
 bin/dasm: cmd/main.go *.go config/*.go instructions/*.go types/*.go
 	go build -o $@ $<

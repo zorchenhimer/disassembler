@@ -20,14 +20,11 @@ type Bank struct {
 	CfgRanges  []*Range
 	CfgWindows []*BankWindow
 
-	//Address uint
-	//Offset  uint
-
 	// key is address
 	Labels map[uint]*Label
 	Ranges map[uint]*Range
 
-	Decoded map[uint]*Decoded
+	Decoded map[uint]AsmLine
 
 	AutoLabels map[uint]*Label
 }
@@ -36,7 +33,7 @@ func NewBank() *Bank {
 	return &Bank{
 		Labels:  make(map[uint]*Label),
 		Ranges:  make(map[uint]*Range),
-		Decoded: make(map[uint]*Decoded),
+		Decoded: make(map[uint]AsmLine),
 
 		CfgLabels:  []*Label{},
 		CfgRanges:  []*Range{},
@@ -45,21 +42,6 @@ func NewBank() *Bank {
 		AutoLabels: make(map[uint]*Label),
 	}
 }
-
-//func (b *Bank) Asm(extraLabels []*Label) string {
-//	addrs := []uint{}
-//	for addr, _ := range b.Decoded {
-//		addrs = append(addrs, addr)
-//	}
-//	slices.Sort(addrs)
-//
-//	builder := &strings.Builder{}
-//	for _, addr := range addrs {
-//		fmt.Fprintln(builder, b.Decoded[i].Asm(addr))
-//	}
-//
-//	return builder.String()
-//}
 
 func (b *Bank) Label(address uint) *Label {
 	if lbl, ok := b.Labels[address]; ok {
@@ -111,18 +93,6 @@ func (b *Bank) verify() error {
 		return fmt.Errorf("Output missing")
 	}
 
-	if b.Address < 0 {
-		return fmt.Errorf("Address cannot be negative")
-	}
-
-	if b.Offset < 0 {
-		return fmt.Errorf("Offset cannot be negative")
-	}
-
-	if b.Size < 0 {
-		return fmt.Errorf("Size cannot be negative")
-	}
-
 	if b.Address + b.Size - 1 > 0xFFFF {
 		return fmt.Errorf("Size goes beyond $FFFF: $%04X + $%04X = $%04X",b.Address, b.Size, b.Address + b.Size)
 	}
@@ -153,25 +123,46 @@ func (b *Bank) verify() error {
 	}
 
 	for _, rng := range b.CfgRanges {
-		for i := uint(0); i < rng.Size; i++ {
-			if rng.Name != "" || rng.Comment != "" {
-				if _, ok := b.Labels[rng.Address]; ok {
-					errs = append(errs, fmt.Errorf("Label overlap from range at $%04X", i+rng.Address))
-				}
+		err := rng.Verify(b.Address, b.Address+b.Size)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		var lbl *Label
+		//var ok bool
+		if rng.Size == 0 {
+			errs = append(errs, fmt.Errorf("Range with no size: %#v", rng))
+		}
 
-				b.Labels[rng.Address] = &Label{
-					Name:    rng.Name,
-					Comment: rng.Comment,
-					Address: rng.Address,
-					Size:    rng.Size,
-				}
+		if rng.Name != "" || rng.Comment != "" {
+
+			lbl = &Label{
+				Name:    rng.Name,
+				Comment: rng.Comment,
+				Address: rng.Address,
+				Size:    rng.Size,
 			}
+		}
 
-			if _, ok := b.Ranges[i+rng.Address]; ok {
-				errs = append(errs, fmt.Errorf("Range overlap at $%04X", i+rng.Address))
+		for i := uint(0); i < rng.Size; i++ {
+			if thing, ok := b.Ranges[i+rng.Address]; ok {
+				errs = append(errs, fmt.Errorf("Range overlap at $%04X: %#v", i+rng.Address, thing))
 			}
 			b.Ranges[i+rng.Address] = rng
+			if lbl != nil {
+				if thing, ok := b.Labels[i+rng.Address]; ok {
+					errs = append(errs, fmt.Errorf("Label overlap from range at $%04X ($%04X): %#v", rng.Address, rng.Address+i, thing))
+				}
+				b.Labels[i+rng.Address] = lbl
+			}
 		}
+	}
+
+	if len(errs) > 0 {
+		for _, err := range errs {
+			fmt.Println(err)
+		}
+		return fmt.Errorf("Errors encountered")
 	}
 
 	return nil

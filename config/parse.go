@@ -602,7 +602,7 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 			key := itm
 			val := p.next()
 			switch strings.ToLower(itm.val) {
-			case "address", "size", "stride":
+			case "address", "size", "stride", "end":
 				if val.typ != lex_Number {
 					return nil, parseError(itm, "%s requires lex_Number", key.val)
 				}
@@ -619,6 +619,8 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 					rng.Size = num
 				case "stride":
 					rng.Stride = num
+				case "end":
+					rng.End = num
 				}
 
 			case "type":
@@ -692,6 +694,7 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 		list = append(list, rng)
 	}
 
+	//fmt.Printf("parsed %d ranges\n", len(list))
 	return list, nil
 }
 
