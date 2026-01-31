@@ -14,6 +14,8 @@ type LabelManager struct {
 
 	// Global label overrides
 	Global map[uint]*types.Label
+
+	defs []*types.WindowDef
 }
 
 func NewLabelManager(global []*types.Label, banks []*types.Bank, windows []*types.WindowDef) *LabelManager {
@@ -34,7 +36,14 @@ func NewLabelManager(global []*types.Label, banks []*types.Bank, windows []*type
 		lm.Banks[bank.Name] = bank
 	}
 
-	for _, win := range windows {
+	lm.defs = windows
+	lm.Init()
+
+	return lm
+}
+
+func (lm *LabelManager) Init() {
+	for _, win := range lm.defs {
 		lm.Windows[win.Name] = nil
 
 		if win.Init != "" {
@@ -47,8 +56,6 @@ func NewLabelManager(global []*types.Label, banks []*types.Bank, windows []*type
 			lm.WindowAddrs[i] = win.Name
 		}
 	}
-
-	return lm
 }
 
 func (lm *LabelManager) SetWindow(winName, bankName string) {
@@ -108,11 +115,12 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 	}
 
 	// do not overwrite labels
-	_, ok = bank.Labels[lbl.Address]
-	if ok {
-		return
+	l, ok := bank.Labels[lbl.Address]
+	if !ok {
+		bank.Labels[lbl.Address] = lbl
+		l = lbl
 	}
-	bank.Labels[lbl.Address] = lbl
+	l.References++
 }
 
 func (lm *LabelManager) GetRange(addr uint) *types.Range {

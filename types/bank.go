@@ -21,8 +21,9 @@ type Bank struct {
 	CfgWindows []*BankWindow
 
 	// key is address
-	Labels map[uint]*Label
-	Ranges map[uint]*Range
+	Labels  map[uint]*Label
+	Ranges  map[uint]*Range
+	Windows map[uint][]*BankWindow
 
 	Decoded map[uint]AsmLine
 
@@ -113,6 +114,10 @@ func (b *Bank) verify() error {
 
 	errs := []error{}
 
+	for _, win := range b.CfgWindows {
+		b.Windows[win.Address] = append(b.Windows[win.Address], win)
+	}
+
 	for _, lbl := range b.CfgLabels {
 		for i := uint(0); i < lbl.Size; i++ {
 			if _, ok := b.Labels[i+lbl.Address]; ok {
@@ -135,7 +140,6 @@ func (b *Bank) verify() error {
 		}
 
 		if rng.Name != "" || rng.Comment != "" {
-
 			lbl = &Label{
 				Name:    rng.Name,
 				Comment: rng.Comment,

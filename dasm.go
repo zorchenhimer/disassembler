@@ -26,6 +26,7 @@ func FromConfig(cfg *types.Config) error {
 	}
 
 	lm := NewLabelManager(cfg.Global.Labels, cfg.Banks, cfg.Global.Windows)
+	lm.Init()
 
 	for _, bank := range cfg.Banks {
 		for index := uint(0); index < bank.Size ; {
@@ -36,6 +37,10 @@ func FromConfig(cfg *types.Config) error {
 			if offset >= uint(len(raw)) {
 				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
 					offset, offset, len(raw), len(raw))
+			}
+
+			for _, win := range bank.Windows[address] {
+				lm.SetWindow(win.Window, win.Bank)
 			}
 
 			typ := bank.Type(address)
@@ -90,6 +95,7 @@ func FromConfig(cfg *types.Config) error {
 			index += uint(instr.Instr.OpLength + instr.Instr.ArgLength)
 		}
 
+		lm.Init()
 		// ranges, specifically
 		for index := uint(0); index < bank.Size; {
 			// index into raw
@@ -100,6 +106,10 @@ func FromConfig(cfg *types.Config) error {
 			if offset >= uint(len(raw)) {
 				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
 					offset, offset, len(raw), len(raw))
+			}
+
+			for _, win := range bank.Windows[address] {
+				lm.SetWindow(win.Window, win.Bank)
 			}
 
 			rng := bank.Ranges[address] // CPU address space

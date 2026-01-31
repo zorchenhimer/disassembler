@@ -34,9 +34,15 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 	var err error
 	lbl := f.lm.GetLabel(address)
 	if lbl != nil && address == lbl.Address {
-		_, err = fmt.Fprintln(f.w, lbl.Name+":")
-		if err != nil {
-			return err
+		if (lbl.Name != "" && lbl.Name != ":") || lbl.References > 0 {
+			if lbl.Name == ":" {
+				//lbl.Name = ""
+				fmt.Printf("%#v\n", lbl)
+			}
+			_, err = fmt.Fprintln(f.w, lbl.Name+":")
+			if err != nil {
+				return err
+			}
 		}
 	}
 

@@ -45,7 +45,11 @@ func (dd *DecodedData) ArgStr(lm LabelManager) string {
 		for _, dat := range dd.Data {
 			lbl := lm.GetLabel(uint(dat))
 			if lbl != nil {
-				vals = append(vals, lbl.Name)
+				if lbl.Address != uint(dat) {
+					vals = append(vals, fmt.Sprintf("%s+%d:", lbl.Name, uint(dat)-lbl.Address))
+				} else {
+					vals = append(vals, lbl.Name)
+				}
 			} else {
 				vals = append(vals, fmt.Sprintf("$%04X", dat))
 			}
@@ -123,7 +127,13 @@ func (di *DecodedInstr) ArgStr(labels LabelManager) string {
 		if lbl.Name == "" && lbl.References > 0 {
 			lbl.Name = ":"
 		}
-		argstr = strings.Replace(argstr, "{{arg}}", lbl.Name, 1)
+
+		if lbl.Size > 1 && di.Instr.AddrMode != AddrMode_Relative {
+			argstr = strings.Replace(argstr, "{{arg}}", fmt.Sprintf("%s+%d", lbl.Name, uint(di.Arg) - lbl.Address), 1)
+		} else {
+			argstr = strings.Replace(argstr, "{{arg}}", lbl.Name, 1)
+		}
+
 	} else {
 		if di.Instr.AddrMode == AddrMode_Relative {
 			// TODO: autolabel or something

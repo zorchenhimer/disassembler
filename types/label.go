@@ -20,6 +20,8 @@ type Label struct {
 	Size    uint
 
 	ParamSize uint
+
+	References int
 }
 
 func NewLabel(address uint, name string) *Label {
