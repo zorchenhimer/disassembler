@@ -17,6 +17,10 @@ func (c *Config) Verify() error {
 		return err
 	}
 
+	if len(c.Banks) == 0 {
+		return fmt.Errorf("At least one Bank block is required")
+	}
+
 	for _, bank := range c.Banks {
 		err = bank.verify()
 		if err != nil {
@@ -45,6 +49,23 @@ func (c *Config) Verify() error {
 		err = bank.verify()
 		if err != nil {
 			return err
+		}
+	}
+
+	for _, win := range c.Windows {
+		if win.Init == "" {
+			continue
+		}
+
+		for _, bank := range c.Banks {
+			if bank.Name == win.Init {
+				found = true
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("Window %s specifies Init bank that does not exist: %s",
+				win.Name, win.Init)
 		}
 	}
 

@@ -34,12 +34,12 @@ func (g ConfigGlobal) verify() error {
 		}
 	}
 
-	for _, win := range g.Windows {
-		err := win.verify()
-		if err != nil {
-			return fmt.Errorf("Windows error: %w", err)
-		}
-	}
+	//for _, win := range g.Windows {
+	//	err := win.verify()
+	//	if err != nil {
+	//		return fmt.Errorf("Windows error: %w", err)
+	//	}
+	//}
 
 	return nil
 }

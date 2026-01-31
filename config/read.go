@@ -32,14 +32,14 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 	l, items := newLexer(raw)
 	go l.Run()
 
-	cfg, err := newParser(items).Run()
+	cfg, err := newParser(items).Run(nested)
 	if err != nil {
 		return nil, err
 	}
 
-	if nested && len(cfg.Global.Include) > 0 {
-		return nil, fmt.Errorf("Nested includes not allowed")
-	}
+	//if nested && len(cfg.Global.Include) > 0 {
+	//	return nil, fmt.Errorf("Nested includes not allowed")
+	//}
 
 	for _, file := range cfg.Global.Include {
 		//inc, err := ReadFile(file)

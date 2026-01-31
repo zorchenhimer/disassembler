@@ -38,8 +38,12 @@ func (p *parser) next() lexItem {
 	return EOF_Item
 }
 
-func (p *parser) Run() (*types.Config, error) {
+
+func (p *parser) Run(included bool) (*types.Config, error) {
 	var err error
+	//var gbl lexItem
+	var gblItem lexItem
+	foundGlobal := false
 
 	for {
 		itm := p.next()
@@ -60,7 +64,20 @@ func (p *parser) Run() (*types.Config, error) {
 
 		switch strings.ToLower(itm.val) {
 		case "global":
+			// The global block is the only unique one.  All others can be specified more than once.
+			if foundGlobal {
+				return p.config, fmt.Errorf("[%d:%d] global block already defined on line %d column %d",
+					itm.line, itm.col, gblItem.line, gblItem.col)
+			}
+			if included {
+				return p.config, fmt.Errorf("[%d:%d] global block not allowed in included file",
+					itm.line, itm.col)
+			}
+
+			foundGlobal = true
+			gblItem = itm
 			err = p.parseGlobal()
+
 		case "bank":
 			err = p.parseBank()
 		case "rambank":
@@ -74,6 +91,10 @@ func (p *parser) Run() (*types.Config, error) {
 		}
 	}
 
+	if !foundGlobal && !included {
+		return p.config, fmt.Errorf("Missing Global block")
+	}
+
 	return p.config, nil
 }
 
@@ -82,6 +103,9 @@ func (p *parser) parseGlobal() error {
 	if itm.typ != lex_OpenBracket {
 		return parseError(itm, "Missing open bracket after Global")
 	}
+
+	// for finding duplicates
+	keys := make(map[string]lexItem)
 
 	for {
 		itm = p.next()
@@ -99,6 +123,15 @@ func (p *parser) parseGlobal() error {
 
 		if itm.typ != lex_Ident {
 			return parseError(itm, "Expected IDENT")
+		}
+
+		// Only include lines are allowed to be given more than once.
+		if strings.ToLower(itm.val) != "include" {
+			if other, ok := keys[strings.ToLower(itm.val)]; ok {
+				return fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+					itm.line, itm.col, itm.val, other.line, other.col)
+			}
+			keys[strings.ToLower(itm.val)] = itm
 		}
 
 		prev := itm
@@ -171,6 +204,10 @@ func (p *parser) parseGlobal() error {
 		}
 	}
 
+	if _, ok := keys["input"]; !ok {
+		return fmt.Errorf("[%d:%d] Missing required Input setting in Global block", itm.line, itm.col)
+	}
+
 	return nil
 }
 
@@ -180,7 +217,7 @@ func (p *parser) parseBank() error {
 		return parseError(itm, "Missing open bracket after Bank")
 	}
 
-	//p.verbose = true
+	keys := make(map[string]lexItem)
 
 	bank := types.NewBank()
 	for {
@@ -200,6 +237,12 @@ func (p *parser) parseBank() error {
 		if itm.typ != lex_Ident {
 			return parseError(itm, "Expected IDENT")
 		}
+
+		if other, ok := keys[strings.ToLower(itm.val)]; ok {
+			return fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+				itm.line, itm.col, itm.val, other.line, other.col)
+		}
+		keys[strings.ToLower(itm.val)] = itm
 
 		prev := itm
 		switch strings.ToLower(prev.val) {
@@ -262,6 +305,10 @@ func (p *parser) parseBank() error {
 		}
 	}
 
+	if _, ok := keys["output"]; !ok {
+		return fmt.Errorf("[%d:%d] Missing required Output setting in bank", itm.line, itm.val)
+	}
+
 	p.config.Banks = append(p.config.Banks, bank)
 	return nil
 }
@@ -272,6 +319,7 @@ func (p *parser) parseBankWindow() ([]*types.BankWindow, error) {
 		return nil, parseError(itm, "Windows expects a list")
 	}
 
+	keys := make(map[string]lexItem)
 	list := []*types.BankWindow{}
 	for {
 		itm = p.next()
@@ -282,6 +330,12 @@ func (p *parser) parseBankWindow() ([]*types.BankWindow, error) {
 		if itm.typ != lex_OpenBracket {
 			return nil, parseError(itm, "Expected lex_OpenBracket, got %#v", itm)
 		}
+
+		if other, ok := keys[strings.ToLower(itm.val)]; ok {
+			return nil, fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+				itm.line, itm.col, itm.val, other.line, other.col)
+		}
+		keys[strings.ToLower(itm.val)] = itm
 
 		win := &types.BankWindow{}
 		for {
@@ -338,6 +392,7 @@ func (p *parser) parseRamBank() error {
 		return parseError(itm, "Missing open bracket after RamBank")
 	}
 
+	keys := make(map[string]lexItem)
 	bank := &types.RamBank{}
 	for {
 		itm = p.next()
@@ -356,6 +411,12 @@ func (p *parser) parseRamBank() error {
 		if itm.typ != lex_Ident {
 			return parseError(itm, "Expected IDENT")
 		}
+
+		if other, ok := keys[strings.ToLower(itm.val)]; ok {
+			return fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+				itm.line, itm.col, itm.val, other.line, other.col)
+		}
+		keys[strings.ToLower(itm.val)] = itm
 
 		prev := itm
 		switch strings.ToLower(prev.val) {
@@ -423,6 +484,7 @@ func (p *parser) parseWindowDefs() ([]*types.WindowDef, error) {
 			return nil, parseError(itm, "Expected lex_OpenBracket, got %#v", itm)
 		}
 
+		keys := make(map[string]lexItem)
 		win := &types.WindowDef{}
 		for {
 			itm = p.next()
@@ -436,6 +498,12 @@ func (p *parser) parseWindowDefs() ([]*types.WindowDef, error) {
 			if itm.typ != lex_Ident {
 				return nil, parseError(itm, "Expected lex_Ident, got %#v", itm)
 			}
+
+			if other, ok := keys[strings.ToLower(itm.val)]; ok {
+				return nil, fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+					itm.line, itm.col, itm.val, other.line, other.col)
+			}
+			keys[strings.ToLower(itm.val)] = itm
 
 			key := itm
 			val := p.next()
@@ -510,6 +578,7 @@ func (p *parser) parseLabels() ([]*types.Label, error) {
 			return nil, parseError(itm, "Expected lex_OpenBracket, got %#v", itm)
 		}
 
+		keys := make(map[string]lexItem)
 		lbl := &types.Label{Size:1}
 		for {
 			itm = p.next()
@@ -523,6 +592,12 @@ func (p *parser) parseLabels() ([]*types.Label, error) {
 			if itm.typ != lex_Ident {
 				return nil, parseError(itm, "Expected lex_Ident, got %#v", itm)
 			}
+
+			if other, ok := keys[strings.ToLower(itm.val)]; ok {
+				return nil, fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+					itm.line, itm.col, itm.val, other.line, other.col)
+			}
+			keys[strings.ToLower(itm.val)] = itm
 
 			key := itm
 			val := p.next()
@@ -585,6 +660,7 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 			return nil, parseError(itm, "Expected lex_OpenBracket, got %#v", itm)
 		}
 
+		keys := make(map[string]lexItem)
 		rng := defaultRange()
 		for {
 			itm = p.next()
@@ -598,6 +674,12 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 			if itm.typ != lex_Ident {
 				return nil, parseError(itm, "Expected lex_Ident, got %#v", itm)
 			}
+
+			if other, ok := keys[strings.ToLower(itm.val)]; ok {
+				return nil, fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+					itm.line, itm.col, itm.val, other.line, other.col)
+			}
+			keys[strings.ToLower(itm.val)] = itm
 
 			key := itm
 			val := p.next()
