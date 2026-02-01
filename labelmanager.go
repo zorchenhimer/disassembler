@@ -97,8 +97,12 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 		return
 	}
 
-	_, ok := lm.Global[lbl.Address]
-	if ok {
+	gbl, ok := lm.Global[lbl.Address]
+	if ok && gbl.Name == "" {
+		lm.Global[lbl.Address].Name = lbl.Name
+		lm.Global[lbl.Address].References++
+		return
+	} else if ok {
 		return
 	}
 
@@ -106,6 +110,7 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 	win, ok := lm.WindowAddrs[lbl.Address]
 	if !ok || win == "" {
 		lm.Global[lbl.Address] = lbl
+		lm.Global[lbl.Address].References++
 		return
 	}
 
@@ -115,11 +120,15 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 	}
 
 	// do not overwrite labels
+	// TODO: anon-labels outside of a specific range (window? +-127 bytes?)
 	l, ok := bank.Labels[lbl.Address]
 	if !ok {
 		bank.Labels[lbl.Address] = lbl
 		l = lbl
+	} else if l.Name == "" {
+		l.Name = lbl.Name
 	}
+
 	l.References++
 }
 

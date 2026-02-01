@@ -319,7 +319,6 @@ func (p *parser) parseBankWindow() ([]*types.BankWindow, error) {
 		return nil, parseError(itm, "Windows expects a list")
 	}
 
-	keys := make(map[string]lexItem)
 	list := []*types.BankWindow{}
 	for {
 		itm = p.next()
@@ -331,12 +330,7 @@ func (p *parser) parseBankWindow() ([]*types.BankWindow, error) {
 			return nil, parseError(itm, "Expected lex_OpenBracket, got %#v", itm)
 		}
 
-		if other, ok := keys[strings.ToLower(itm.val)]; ok {
-			return nil, fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
-				itm.line, itm.col, itm.val, other.line, other.col)
-		}
-		keys[strings.ToLower(itm.val)] = itm
-
+		keys := make(map[string]lexItem)
 		win := &types.BankWindow{}
 		for {
 			itm = p.next()
@@ -350,6 +344,12 @@ func (p *parser) parseBankWindow() ([]*types.BankWindow, error) {
 			if itm.typ != lex_Ident {
 				return nil, parseError(itm, "Expected lex_Ident, got %#v", itm)
 			}
+
+			if other, ok := keys[strings.ToLower(itm.val)]; ok {
+				return nil, fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
+					itm.line, itm.col, itm.val, other.line, other.col)
+			}
+			keys[strings.ToLower(itm.val)] = itm
 
 			key := itm
 			val := p.next()
@@ -676,7 +676,11 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 		}
 
 		keys := make(map[string]lexItem)
-		rng := defaultRange()
+		rng := &types.Range{
+			Size:    0,
+			Type:    types.Range_Bytes,
+			Display: types.Display_Hexadecimal,
+		}
 		for {
 			itm = p.next()
 			if itm.typ == lex_Semicolon {

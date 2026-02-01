@@ -54,7 +54,11 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 
 		if lbl != nil && address+offs == lbl.Address {
 			if (lbl.Name != "" && lbl.Name != ":") || lbl.References > 0 {
-				_, err = fmt.Fprintln(f.w, lbl.Name+":")
+				if lbl.Name == ":" {
+					_, err = fmt.Fprintln(f.w, lbl.Name)
+				} else {
+					_, err = fmt.Fprintln(f.w, lbl.Name+":")
+				}
 				if err != nil {
 					return err
 				}

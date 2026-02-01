@@ -35,6 +35,7 @@ func NewBank() *Bank {
 		Labels:  make(map[uint]*Label),
 		Ranges:  make(map[uint]*Range),
 		Decoded: make(map[uint]AsmLine),
+		Windows: make(map[uint][]*BankWindow),
 
 		CfgLabels:  []*Label{},
 		CfgRanges:  []*Range{},

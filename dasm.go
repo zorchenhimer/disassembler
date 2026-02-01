@@ -29,6 +29,62 @@ func FromConfig(cfg *types.Config) error {
 	lm.Init()
 
 	for _, bank := range cfg.Banks {
+		// ranges, specifically
+		for index := uint(0); index < bank.Size; {
+			// index into raw
+			offset  := index + bank.Offset
+			// CPU address
+			address := index + bank.Address
+
+			if offset >= uint(len(raw)) {
+				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
+					offset, offset, len(raw), len(raw))
+			}
+
+			for _, win := range bank.Windows[address] {
+				lm.SetWindow(win.Window, win.Bank)
+			}
+
+			rng := bank.Ranges[address] // CPU address space
+
+			if rng == nil || rng.Type == types.Range_Code {
+				index++
+				continue
+			}
+
+			//fmt.Printf("processing range [%s:$%04X] %#v\n", bank.Name, address, rng)
+			dd := &types.DecodedData{
+				Data: []int{},
+				Newline: true,
+				Stride: int(rng.Stride),
+			}
+			//addr := (bank.Address-bank.Offset)+offs
+
+			if rng.Type == types.Range_Words {
+				dd.IsWords = true
+
+				for i := uint(0); i < rng.Size; i+=2 {
+					dd.Data = append(dd.Data, int(raw[offset+i]) | (int(raw[offset+i+1]) << 8))
+				}
+
+			} else {
+				for i := uint(0); i < rng.Size; i++ {
+					dd.Data = append(dd.Data, int(raw[offset+i]))
+				}
+			}
+
+			for i := uint(0); i < rng.Size; i++ {
+				if thing, ok := bank.Decoded[i+address]; ok {
+					return fmt.Errorf("Range at $%04X (starting at $%04X) in bank %s overlaps something else: %#v",
+						i+address, address, bank.Name, thing)
+				}
+				bank.Decoded[i+address] = dd
+			}
+
+			index += rng.Size
+		}
+
+		lm.Init()
 		for index := uint(0); index < bank.Size ; {
 			// index into raw
 			offset  := index + bank.Offset
@@ -51,9 +107,22 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
+			long_instr := false
 			instr := instructions.TryInstr_6502(raw[offset:])
 			if instr == nil {
-				//bank.SetType(offs + bank.Address, types.Range_Bytes)
+				long_instr = true
+			} else {
+
+				//instr.Instr.OpLength + instr.Instr.ArgLength
+				for i := uint(0); i < uint(instr.Instr.OpLength + instr.Instr.ArgLength); i++ {
+					// instruction runs into defined data
+					if bank.Type(address+i) != types.Range_Code {
+						long_instr = true
+					}
+				}
+			}
+
+			if long_instr {
 				dd := &types.DecodedData{
 					Data: []int{int(raw[offset])},
 					IsWords: false,
@@ -95,60 +164,6 @@ func FromConfig(cfg *types.Config) error {
 			index += uint(instr.Instr.OpLength + instr.Instr.ArgLength)
 		}
 
-		lm.Init()
-		// ranges, specifically
-		for index := uint(0); index < bank.Size; {
-			// index into raw
-			offset  := index + bank.Offset
-			// CPU address
-			address := index + bank.Address
-
-			if offset >= uint(len(raw)) {
-				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
-					offset, offset, len(raw), len(raw))
-			}
-
-			for _, win := range bank.Windows[address] {
-				lm.SetWindow(win.Window, win.Bank)
-			}
-
-			rng := bank.Ranges[address] // CPU address space
-
-			if rng == nil || rng.Type == types.Range_Code {
-				index++
-				continue
-			}
-
-			//fmt.Printf("processing range [%s:$%04X] %#v\n", bank.Name, address, rng)
-			dd := &types.DecodedData{
-				Data: []int{},
-				Newline: true,
-			}
-			//addr := (bank.Address-bank.Offset)+offs
-
-			if rng.Type == types.Range_Words {
-				dd.IsWords = true
-
-				for i := uint(0); i < rng.Size; i+=2 {
-					dd.Data = append(dd.Data, int(raw[offset+i]) | (int(raw[offset+i+1]) << 8))
-				}
-
-			} else {
-				for i := uint(0); i < rng.Size; i++ {
-					dd.Data = append(dd.Data, int(raw[offset+i]))
-				}
-			}
-
-			for i := uint(0); i < rng.Size; i++ {
-				if thing, ok := bank.Decoded[i+address]; ok {
-					return fmt.Errorf("Range at $%04X (starting at $%04X) in bank %s overlaps something else: %#v",
-						i+address, address, bank.Name, thing)
-				}
-				bank.Decoded[i+address] = dd
-			}
-
-			index += rng.Size
-		}
 	}
 
 	verbose = false

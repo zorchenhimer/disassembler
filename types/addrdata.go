@@ -17,6 +17,10 @@ func (dd *DecodedData) InsertNewlineAfter() bool {
 }
 
 func (dd *DecodedData) LineCount() int {
+	if len(dd.Data) < dd.Stride {
+		return 1
+	}
+
 	if dd.Stride == 0 {
 		dd.Stride = 8
 	}
@@ -25,12 +29,17 @@ func (dd *DecodedData) LineCount() int {
 	if len(dd.Data) % dd.Stride != 0 {
 		count++
 	}
+
 	return count
 	//return 1
 }
 
 func (dd *DecodedData) Length() uint {
-	return uint(len(dd.Data))
+	l := uint(len(dd.Data))
+	if dd.IsWords {
+		return l*2
+	}
+	return l
 }
 
 func (dd *DecodedData) Op() string {
@@ -65,9 +74,11 @@ func (dd *DecodedData) ArgStr(lm LabelManager, offset int) string {
 }
 
 func (dd *DecodedData) Asm(line int, lm LabelManager) (uint, string) {
+	// value offset
 	offs := line * dd.Stride
 	argstr := dd.ArgStr(lm, offs)
 
+	// byte offset
 	if dd.IsWords {
 		offs *= 2
 	}
