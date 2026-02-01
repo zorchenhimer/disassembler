@@ -9,10 +9,24 @@ type DecodedData struct {
 	Data    []int
 	Stride  int
 	IsWords bool
+	Newline bool
+}
+
+func (dd *DecodedData) InsertNewlineAfter() bool {
+	return dd.Newline
 }
 
 func (dd *DecodedData) LineCount() int {
-	return 1
+	if dd.Stride == 0 {
+		dd.Stride = 8
+	}
+
+	count := len(dd.Data) / dd.Stride
+	if len(dd.Data) % dd.Stride != 0 {
+		count++
+	}
+	return count
+	//return 1
 }
 
 func (dd *DecodedData) Length() uint {
@@ -26,23 +40,12 @@ func (dd *DecodedData) Op() string {
 	return ".byte"
 }
 
-//func (dd *DecodedData) LineCount() int {
-//	if len(dd.Data) <= dd.Stride {
-//		return 1
-//	}
-//
-//	lines := len(dd.Data) / dd.Stride
-//	if len(dd.Data) % dd.Stride != 0 {
-//		lines++
-//	}
-//	return lines
-//}
-
 // TODO: use stride (will need to account for multiline stuff in other areas.
-func (dd *DecodedData) ArgStr(lm LabelManager) string {
+func (dd *DecodedData) ArgStr(lm LabelManager, offset int) string {
 	vals := []string{}
-	if dd.IsWords {
-		for _, dat := range dd.Data {
+	for i := offset; i < len(dd.Data) && i < offset + dd.Stride; i++ {
+		dat := dd.Data[i]
+		if dd.IsWords {
 			lbl := lm.GetLabel(uint(dat))
 			if lbl != nil {
 				if lbl.Address != uint(dat) {
@@ -53,9 +56,7 @@ func (dd *DecodedData) ArgStr(lm LabelManager) string {
 			} else {
 				vals = append(vals, fmt.Sprintf("$%04X", dat))
 			}
-		}
-	} else {
-		for _, dat := range dd.Data {
+		} else {
 			vals = append(vals, fmt.Sprintf("$%02X", dat))
 		}
 	}
@@ -63,8 +64,15 @@ func (dd *DecodedData) ArgStr(lm LabelManager) string {
 	return strings.Join(vals, ", ")
 }
 
-func (dd *DecodedData) Asm(line int, lm LabelManager) string {
-	return dd.Op() + " " + dd.ArgStr(lm)
+func (dd *DecodedData) Asm(line int, lm LabelManager) (uint, string) {
+	offs := line * dd.Stride
+	argstr := dd.ArgStr(lm, offs)
+
+	if dd.IsWords {
+		offs *= 2
+	}
+
+	return uint(offs), dd.Op() + " " + argstr
 }
 
 func (dd *DecodedData) RawStr() string {
@@ -81,21 +89,28 @@ type DecodedInstr struct {
 	Instr  *Instruction
 }
 
-func (di *DecodedInstr) LineCount() int {
+func (di *DecodedInstr) InsertNewlineAfter() bool {
 	switch di.Instr.Name {
 	case "RTS", "JMP":
-		return 2
+		return true
 	default:
-		return 1
+		return false
 	}
+}
+
+func (di *DecodedInstr) LineCount() int {
+	return 1
 }
 
 func (di *DecodedInstr) Length() uint {
 	return uint(len(di.Args)+1)
 }
 
-func (di *DecodedInstr) Asm(line int, lm LabelManager) string {
-	return di.Op() + " " + di.ArgStr(lm)
+func (di *DecodedInstr) Asm(line int, lm LabelManager) (uint, string) {
+	if line > 0 {
+		return 0, ""
+	}
+	return 0, di.Op() + " " + di.ArgStr(lm)
 }
 
 func (di *DecodedInstr) Op() string {

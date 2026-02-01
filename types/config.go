@@ -52,14 +52,23 @@ func (c *Config) Verify() error {
 		}
 	}
 
-	for _, win := range c.Windows {
+	for _, win := range c.Global.Windows {
 		if win.Init == "" {
 			continue
 		}
 
-		for _, bank := range c.Banks {
-			if bank.Name == win.Init {
-				found = true
+		found := false
+		if win.Type == Window_Rom {
+			for _, bank := range c.Banks {
+				if bank.Name == win.Init {
+					found = true
+				}
+			}
+		} else {
+			for _, bank := range c.RamBanks {
+				if bank.Name == win.Init {
+					found = true
+				}
 			}
 		}
 

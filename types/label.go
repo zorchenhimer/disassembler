@@ -13,7 +13,10 @@ type LabelManager interface {
 
 type Label struct {
 	Name    string
-	Comment string
+	//Comment string
+
+	CommentBlock  string // Block comment starting at the beginning of a line
+	CommentInline string // Multi-line comment after the instruction
 
 	Address uint
 	//Offset  int
@@ -27,7 +30,6 @@ type Label struct {
 func NewLabel(address uint, name string) *Label {
 	return &Label{
 		Address:   address,
-		Comment:   "",
 		Name:      name,
 		ParamSize: 0,
 		Size:      1,
@@ -56,16 +58,9 @@ func (lbl *Label) Verify(begin, end uint) error {
 	}
 
 	if strings.TrimSpace(lbl.Name) == "" && 
-	   strings.TrimSpace(lbl.Comment) == "" {
-		   return fmt.Errorf("Name and Command cannot both be empty: %#v", lbl)
-	}
-
-	if strings.TrimSpace(lbl.Comment) != "" {
-		lines := []string{}
-		for _, line := range strings.Split(lbl.Comment, "\n") {
-			lines = append(lines, strings.TrimSpace(line))
-		}
-		lbl.Comment = strings.Join(lines, "\n")
+	   strings.TrimSpace(lbl.CommentBlock) == "" &&
+	   strings.TrimSpace(lbl.CommentInline) == "" {
+		   return fmt.Errorf("Name and Comment cannot both be empty: %#v", lbl)
 	}
 
 	return nil

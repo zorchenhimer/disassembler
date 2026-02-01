@@ -122,6 +122,7 @@ func FromConfig(cfg *types.Config) error {
 			//fmt.Printf("processing range [%s:$%04X] %#v\n", bank.Name, address, rng)
 			dd := &types.DecodedData{
 				Data: []int{},
+				Newline: true,
 			}
 			//addr := (bank.Address-bank.Offset)+offs
 
@@ -151,32 +152,34 @@ func FromConfig(cfg *types.Config) error {
 	}
 
 	verbose = false
-	//return nil
 
 	for _, bank := range cfg.Banks {
 		output, err := os.Create(bank.Output)
 		if err != nil {
 			return err
 		}
+
 		formatter := NewFormatter(output, lm)
 		// TODO: put these in the config
 		formatter.Indent = 4
 		formatter.AsmWidth = 30
 		formatter.CommentLevel = cfg.Global.Comments
 
-		for i := bank.Address; i < bank.Address + bank.Size; {
-			dec := bank.Decoded[i]
-			if dec == nil {
-				panic(fmt.Sprintf("[%s] %04X+%04X (%X) how in the fuck?", bank.Name, bank.Address, i, bank.Address + bank.Size))
+		lastNewline := false
+		for addr := bank.Address; addr < bank.Address + bank.Size; {
+			for _, win := range bank.Windows[addr] {
+				lm.SetWindow(win.Window, win.Bank)
 			}
-			//lbl := bank.Labels[i]
-			//lbl := lm.GetLabel(i)
-			//if lbl != nil {
-			//	fmt.Fprintln(output, lbl.Name+":")
-			//}
-			//fmt.Fprintln(output, dec.Asm(i, lm))
-			formatter.Write(i, dec)
-			i += dec.Length()
+
+			dec := bank.Decoded[addr]
+			if dec == nil {
+				panic(fmt.Sprintf("[%s] %04X+%04X (%X) how in the fuck?",
+					bank.Name, bank.Address, addr, bank.Address + bank.Size))
+			}
+
+			formatter.Write(addr, dec, lastNewline)
+			lastNewline = dec.InsertNewlineAfter()
+			addr += dec.Length()
 		}
 
 		output.Close()

@@ -23,47 +23,70 @@ func NewFormatter(w io.Writer, lm types.LabelManager) *Formatter {
 	return &Formatter{ w: w, lm: lm}
 }
 
-func (f *Formatter) Write(address uint, line types.AsmLine) error {
-	parts := []string{}
-	if f.Indent > 0 {
-		parts = append(parts, strings.Repeat(" ", f.Indent-1))
-	}
-
-	parts = append(parts, fmt.Sprintf("%-*s", f.AsmWidth-1, line.Asm(0, f.lm)))
-
+func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) error {
 	var err error
-	lbl := f.lm.GetLabel(address)
-	if lbl != nil && address == lbl.Address {
-		if (lbl.Name != "" && lbl.Name != ":") || lbl.References > 0 {
-			if lbl.Name == ":" {
-				//lbl.Name = ""
-				fmt.Printf("%#v\n", lbl)
+	for lnum := 0; lnum < line.LineCount(); lnum++ {
+		offs, asm := line.Asm(lnum, f.lm)
+		lbl := f.lm.GetLabel(address+offs)
+
+		if offs == 0 && lnum > 0 && asm == "" {
+			fmt.Fprintln(f.w, "")
+			continue
+		}
+
+		if lbl != nil && lbl.CommentBlock != "" && address+offs == lbl.Address {
+			cb := strings.Split(lbl.CommentBlock, "\n")
+			if !lastNewline {
+				fmt.Fprintln(f.w, "")
 			}
-			_, err = fmt.Fprintln(f.w, lbl.Name+":")
-			if err != nil {
-				return err
+
+			for _, c := range cb {
+				fmt.Fprintln(f.w, ";", strings.TrimSpace(c))
 			}
 		}
-	}
 
-	if f.CommentLevel > types.Comment_None {
-		parts = append(parts, ";")
-		if f.CommentLevel == types.Comment_Full {
-			parts = append(parts, fmt.Sprintf("%04X", address))
-			parts = append(parts, line.RawStr())
+		parts := []string{}
+		if f.Indent > 0 {
+			parts = append(parts, strings.Repeat(" ", f.Indent-1))
 		}
-		if lbl != nil && lbl.Comment != "" {
-			parts = append(parts, lbl.Comment)
+
+		parts = append(parts, fmt.Sprintf("%-*s", f.AsmWidth-1, asm))
+
+		if lbl != nil && address+offs == lbl.Address {
+			if (lbl.Name != "" && lbl.Name != ":") || lbl.References > 0 {
+				_, err = fmt.Fprintln(f.w, lbl.Name+":")
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if f.CommentLevel > types.Comment_None {
+			if f.CommentLevel == types.Comment_Full && asm != "" {
+				parts = append(parts, ";")
+				parts = append(parts, fmt.Sprintf("%04X", address+offs))
+				parts = append(parts, line.RawStr())
+			}
+
+			if lbl != nil && lbl.CommentInline != "" && address+offs == lbl.Address {
+				parts = append(parts, ";")
+				for i, cline := range strings.Split(lbl.CommentInline, "\n") {
+					if i == 0 {
+						parts = append(parts, cline)
+					} else {
+						parts = append(parts, "\n; ", cline)
+					}
+				}
+			}
+		}
+
+		_, err = fmt.Fprintln(f.w, strings.TrimRight(strings.Join(parts, " "), " "))
+		if err != nil {
+			return err
 		}
 	}
 
-	_, err = fmt.Fprintln(f.w, strings.TrimRight(strings.Join(parts, " "), " "))
-	if err != nil {
-		return err
-	}
-
-	// TODO: figure out proper line count stuff
-	if line.LineCount() > 1 {
+	if line.InsertNewlineAfter() {
 		fmt.Fprintln(f.w, "")
 	}
 

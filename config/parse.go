@@ -621,15 +621,30 @@ func (p *parser) parseLabels() ([]*types.Label, error) {
 					lbl.ParamSize = num
 				}
 
-			case "name", "comment":
+			case "name", "comment", "commentblock", "cb", "commentinline", "ci":
 				if val.typ != lex_String {
 					return nil, parseError(itm, "%s requires lex_String", key.val)
 				}
+				str := strings.ReplaceAll(val.val, "\\n", "\n")
+				slc := []string{}
+				for _, s := range strings.Split(str, "\n") {
+					slc = append(slc, strings.TrimSpace(s))
+				}
+				str = strings.Join(slc, "\n")
 
-				if strings.ToLower(key.val) == "name" {
-					lbl.Name = val.val
-				} else {
-					lbl.Comment = val.val
+				switch strings.ToLower(key.val) {
+				case "name":
+					lbl.Name = str
+				case "commentblock", "cb":
+					lbl.CommentBlock = str
+				case "commentinline", "ci":
+					lbl.CommentInline = str
+				case "comment":
+					if strings.Index(str, "\n") > -1 {
+						lbl.CommentBlock = str
+					} else {
+						lbl.CommentInline = str
+					}
 				}
 
 			default:

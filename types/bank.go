@@ -141,10 +141,10 @@ func (b *Bank) verify() error {
 
 		if rng.Name != "" || rng.Comment != "" {
 			lbl = &Label{
-				Name:    rng.Name,
-				Comment: rng.Comment,
-				Address: rng.Address,
-				Size:    rng.Size,
+				Name:         rng.Name,
+				CommentBlock: rng.Comment,
+				Address:      rng.Address,
+				Size:         rng.Size,
 			}
 		}
 
