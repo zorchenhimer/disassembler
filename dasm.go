@@ -195,8 +195,8 @@ func FromConfig(cfg *types.Config) error {
 
 		formatter := NewFormatter(output, lm)
 		// TODO: put these in the config
-		formatter.Indent = 4
-		formatter.AsmWidth = 30
+		formatter.Indent = cfg.Global.InstrIndent
+		formatter.AsmWidth = cfg.Global.AsmWidth
 		formatter.CommentLevel = cfg.Global.Comments
 
 		lastNewline := false

@@ -9,9 +9,13 @@ type ConfigGlobal struct {
 	Input     string
 	MlbOutput string
 
-	Comments CommentLevel
-
+	Comments     CommentLevel
 	Architecture ArchitectureType
+
+	//CommentColumn int
+	InstrIndent   int
+	AsmWidth      int
+
 
 	Windows []*WindowDef
 	Labels  []*Label
@@ -40,6 +44,15 @@ func (g ConfigGlobal) verify() error {
 	//		return fmt.Errorf("Windows error: %w", err)
 	//	}
 	//}
+
+	// both of these init to -1 in config/parse.go
+	if g.InstrIndent < 0 {
+		g.InstrIndent = 4
+	}
+
+	if g.AsmWidth < 0 {
+		g.AsmWidth = 30
+	}
 
 	return nil
 }

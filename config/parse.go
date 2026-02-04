@@ -16,7 +16,12 @@ type parser struct {
 
 func newParser(items chan lexItem) *parser {
 	return &parser{
-		config: &types.Config{},
+		config: &types.Config{
+			Global: types.ConfigGlobal{
+				InstrIndent: -1,
+				AsmWidth: -1,
+			},
+		},
 		items: items,
 		//verbose: true,
 	}
@@ -198,6 +203,24 @@ func (p *parser) parseGlobal() error {
 				return err
 			}
 			p.config.Global.Labels = vals
+
+		case "instrindent", "indent", "asmwidth":
+			itm = p.next()
+			if itm.typ != lex_Number {
+				return parseError(itm, "%s requires lex_Number", prev.val)
+			}
+
+			num, err := strconv.Atoi(itm.val)
+			if err != nil {
+				return parseError(itm, "%s can only take decimal integers", prev.val)
+			}
+
+			switch strings.ToLower(prev.val) {
+			case "instrindent", "indent":
+				p.config.Global.InstrIndent = num
+			case "asmwidth":
+				p.config.Global.AsmWidth = num
+			}
 
 		default:
 			return parseError(itm, "Invalid IDENT: %s", itm.val)
