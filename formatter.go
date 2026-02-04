@@ -78,7 +78,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 					if i == 0 {
 						parts = append(parts, cline)
 					} else {
-						parts = append(parts, "\n; ", cline)
+						parts = append(parts, fmt.Sprintf("\n%-*s; %s", f.AsmWidth+f.Indent+16, "", cline))
 					}
 				}
 			}
