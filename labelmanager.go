@@ -92,18 +92,18 @@ func (lm *LabelManager) GetLabel(addr uint) *types.Label {
 }
 
 // for autolabels only
-func (lm *LabelManager) SetLabel(lbl *types.Label) {
+func (lm *LabelManager) SetLabel(lbl *types.Label) *types.Label {
 	if lbl == nil {
-		return
+		return nil
 	}
 
 	gbl, ok := lm.Global[lbl.Address]
 	if ok && gbl.Name == "" {
 		lm.Global[lbl.Address].Name = lbl.Name
 		lm.Global[lbl.Address].References++
-		return
+		return lm.Global[lbl.Address]
 	} else if ok {
-		return
+		return gbl
 	}
 
 	// Default to global if no window exists for address
@@ -111,12 +111,12 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 	if !ok || win == "" {
 		lm.Global[lbl.Address] = lbl
 		lm.Global[lbl.Address].References++
-		return
+		return lm.Global[lbl.Address]
 	}
 
 	bank, ok := lm.Windows[win]
 	if !ok || bank == nil {
-		return
+		return nil
 	}
 
 	// do not overwrite labels
@@ -130,6 +130,7 @@ func (lm *LabelManager) SetLabel(lbl *types.Label) {
 	}
 
 	l.References++
+	return l
 }
 
 func (lm *LabelManager) GetRange(addr uint) *types.Range {

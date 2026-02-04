@@ -132,6 +132,7 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
+			length := uint(instr.Instr.OpLength + instr.Instr.ArgLength)
 			instr.Address = address //offs + bank.Address-bank.Offset
 			//decoded.Instr = instr
 			//decoded.Raw = instr.Raw()
@@ -152,7 +153,25 @@ func FromConfig(cfg *types.Config) error {
 				lm.SetLabel(types.NewLabel(reladdr, fmt.Sprintf("L%04X", reladdr)))
 
 			default:
-				lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf("L%04X", instr.Arg)))
+				lbl := lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf("L%04X", instr.Arg)))
+				if instr.Instr.Name == "JSR" && lbl != nil && lbl.ParamSize > 0 {
+					if length+lbl.ParamSize+index > uint(len(raw)) {
+						return fmt.Errorf("parameter for label %s out of bounds", lbl.Name)
+					}
+
+					dd := &types.DecodedData{
+						Data: []int{},
+						IsWords: false,
+					}
+
+					for i := uint(0); i < lbl.ParamSize; i++ {
+						// +3 is for the OP + Addr
+						dd.Data = append(dd.Data, int(raw[offset+i+3]))
+						bank.Decoded[address+3+i] = dd
+					}
+
+					length += lbl.ParamSize
+				}
 			}
 
 			decoded = instr
@@ -161,7 +180,7 @@ func FromConfig(cfg *types.Config) error {
 				bank.Decoded[address+i] = decoded
 			}
 
-			index += uint(instr.Instr.OpLength + instr.Instr.ArgLength)
+			index += length
 		}
 
 	}
