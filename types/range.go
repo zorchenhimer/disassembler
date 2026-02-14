@@ -22,6 +22,24 @@ type Range struct {
 	RtsLabels     bool
 }
 
+func (r *Range) Duplicate() *Range {
+	return &Range{
+		Name:    r.Name,
+		Comment: r.Comment,
+
+		Address: r.Address,
+		Size:    r.Size,
+		End:     r.End,
+		Stride:  r.Stride,
+
+		Type:    r.Type,
+		Display: r.Display,
+
+		ResolveLabels: r.ResolveLabels,
+		RtsLabels:     r.RtsLabels,
+	}
+}
+
 type RangeType int
 
 const (

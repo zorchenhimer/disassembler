@@ -56,58 +56,6 @@ func FromConfig(cfg *types.Config) error {
 			bank.Size = uint(len(raw[bank.Offset:]))
 		}
 
-		// ranges, specifically
-		for index := uint(0); index < bank.Size; {
-			// index into raw
-			offset  := index + bank.Offset
-			// CPU address
-			address := index + bank.Address
-
-			if offset >= uint(len(raw)) {
-				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
-					offset, offset, len(raw), len(raw))
-			}
-
-			for _, win := range bank.Windows[address] {
-				lm.SetWindow(win.Window, win.Bank)
-			}
-
-			rng := bank.Ranges[address] // CPU address space
-
-			if rng == nil || rng.Type == types.Range_Code {
-				index++
-				continue
-			}
-
-			dd := &types.DecodedData{
-				Data: []int{},
-				Newline: true,
-				Stride: int(rng.Stride),
-			}
-
-			if rng.Type == types.Range_Words {
-				dd.IsWords = true
-
-				for i := uint(0); i < rng.Size; i+=2 {
-					dd.Data = append(dd.Data, int(raw[offset+i]) | (int(raw[offset+i+1]) << 8))
-				}
-
-			} else {
-				for i := uint(0); i < rng.Size; i++ {
-					dd.Data = append(dd.Data, int(raw[offset+i]))
-				}
-			}
-
-			for i := uint(0); i < rng.Size; i++ {
-				if thing, ok := bank.Decoded[i+address]; ok {
-					return fmt.Errorf("Range at $%04X (starting at $%04X) in bank %s overlaps something else: %#v",
-						i+address, address, bank.Name, thing)
-				}
-				bank.Decoded[i+address] = dd
-			}
-
-			index += rng.Size
-		}
 
 		lm.Init()
 		for index := uint(0); index < bank.Size ; {
@@ -217,6 +165,99 @@ func FromConfig(cfg *types.Config) error {
 			}
 
 			index += length
+		}
+
+		// Split ranges
+		for _, rng := range bank.CfgRanges {
+			if rng.Name != "" {
+				continue
+			}
+
+			var lbl *types.Label
+			var crng *types.Range = rng // current range
+			for i := uint(0); i < rng.Size; i++ {
+				l := bank.Labels[i+rng.Address]
+				split := false
+				if lbl == nil && l != nil && i != 0 {
+					// found first label
+					split = true
+					lbl = l
+				} else if lbl != nil && l != lbl {
+					// found new label
+					split = true
+					lbl = l
+				}
+
+				if split {
+					prng := crng
+					crng = crng.Duplicate()
+
+					prng.Size = i+rng.Address-prng.Address
+					prng.End = i+rng.Address-1
+
+					crng.Address = i+rng.Address
+					crng.Size -= prng.Size
+					crng.Name = ""
+					crng.Comment = ""
+				}
+
+				// reassign ranges
+				bank.Ranges[i+rng.Address] = crng
+			}
+		}
+
+		// ranges, specifically
+		lm.Init()
+		for index := uint(0); index < bank.Size; {
+			// index into raw
+			offset  := index + bank.Offset
+			// CPU address
+			address := index + bank.Address
+
+			if offset >= uint(len(raw)) {
+				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
+					offset, offset, len(raw), len(raw))
+			}
+
+			for _, win := range bank.Windows[address] {
+				lm.SetWindow(win.Window, win.Bank)
+			}
+
+			rng := bank.Ranges[address] // CPU address space
+
+			if rng == nil || rng.Type == types.Range_Code {
+				index++
+				continue
+			}
+
+			dd := &types.DecodedData{
+				Data: []int{},
+				Newline: true,
+				Stride: int(rng.Stride),
+			}
+
+			if rng.Type == types.Range_Words {
+				dd.IsWords = true
+
+				for i := uint(0); i < rng.Size; i+=2 {
+					dd.Data = append(dd.Data, int(raw[offset+i]) | (int(raw[offset+i+1]) << 8))
+				}
+
+			} else {
+				for i := uint(0); i < rng.Size; i++ {
+					dd.Data = append(dd.Data, int(raw[offset+i]))
+				}
+			}
+
+			for i := uint(0); i < rng.Size; i++ {
+				if thing, ok := bank.Decoded[i+address]; ok {
+					return fmt.Errorf("Range at $%04X (starting at $%04X) in bank %s overlaps something else: %#v",
+						i+address, address, bank.Name, thing)
+				}
+				bank.Decoded[i+address] = dd
+			}
+
+			index += rng.Size
 		}
 
 	}
