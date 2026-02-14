@@ -149,15 +149,35 @@ func (di *DecodedInstr) ArgStr(labels LabelManager) string {
 
 	argstr := AddressModeFormats[di.Instr.AddrMode]
 	if lbl != nil {
-		// TODO: count anon labels between ref and addr
-		if lbl.Name == "" && lbl.References > 0 {
-			lbl.Name = ":"
-		}
-
 		if lbl.Size > 1 && di.Instr.AddrMode != AddrMode_Relative {
 			argstr = strings.Replace(argstr, "{{arg}}", fmt.Sprintf("%s+%d", lbl.Name, uint(di.Arg) - lbl.Address), 1)
 		} else {
-			argstr = strings.Replace(argstr, "{{arg}}", lbl.Name, 1)
+
+			// Count anon labels
+			var lblName = lbl.Name
+			if lbl.Name == ":" {
+				count := 1
+				dir := "+"
+				if lbl.Address < di.Address {
+					dir = "-"
+					for i := uint(di.Address); i > lbl.Address; i-- {
+						l := labels.GetLabel(i)
+						if l != nil && l.Name == ":" {
+							count++
+						}
+					}
+				} else {
+					for i := uint(di.Address); i < lbl.Address; i++ {
+						l := labels.GetLabel(i)
+						if l != nil && l.Name == ":" {
+							count++
+						}
+					}
+				}
+
+				lblName = ":"+strings.Repeat(dir, count)
+			}
+			argstr = strings.Replace(argstr, "{{arg}}", lblName, 1)
 		}
 
 	} else {
