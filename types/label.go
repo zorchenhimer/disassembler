@@ -9,6 +9,8 @@ type LabelManager interface {
 	GetLabel(addr uint) *Label
 	SetLabel(lbl *Label) *Label
 	GetRange(addr uint) *Range
+
+	SetWindow(winName, bankName string)
 }
 
 type Label struct {

@@ -43,7 +43,6 @@ func (p *parser) next() lexItem {
 	return EOF_Item
 }
 
-
 func (p *parser) Run(included bool) (*types.Config, error) {
 	var err error
 	//var gbl lexItem
@@ -85,8 +84,6 @@ func (p *parser) Run(included bool) (*types.Config, error) {
 
 		case "bank":
 			err = p.parseBank()
-		case "rambank":
-			err = p.parseRamBank()
 		default:
 			err = parseError(itm, "Invalid block: %s", itm.val)
 		}
@@ -149,6 +146,9 @@ func (p *parser) parseGlobal() error {
 
 			switch strings.ToLower(prev.val) {
 			case "input":
+				if itm.val == "-" {
+					return parseError(itm, "global input cannot be \"-\"")
+				}
 				p.config.Global.Input = itm.val
 			case "mlboutput":
 				p.config.Global.MlbOutput = itm.val
@@ -222,13 +222,24 @@ func (p *parser) parseGlobal() error {
 				p.config.Global.AsmWidth = num
 			}
 
+		case "autovars":
+			itm = p.next()
+			if itm.typ != lex_Ident {
+				return parseError(itm, "%s expects an IDENT; got %s", prev.val, itm.typ)
+			}
+
+			switch strings.ToLower(itm.val) {
+			case "true":
+				p.config.Global.AutoVars = true
+			case "false":
+				p.config.Global.AutoVars = false
+			default:
+				return parseError(itm, "invalid true/false value")
+			}
+
 		default:
 			return parseError(itm, "Invalid IDENT: %s", itm.val)
 		}
-	}
-
-	if _, ok := keys["input"]; !ok {
-		return fmt.Errorf("[%d:%d] Missing required Input setting in Global block", itm.line, itm.col)
 	}
 
 	return nil
@@ -269,7 +280,7 @@ func (p *parser) parseBank() error {
 
 		prev := itm
 		switch strings.ToLower(prev.val) {
-		case "name", "output":
+		case "name", "output", "input":
 			itm = p.next()
 			if itm.typ != lex_String {
 				return parseError(itm, "%s expects a string", prev.val)
@@ -280,6 +291,12 @@ func (p *parser) parseBank() error {
 				bank.Name = itm.val
 			case "output":
 				bank.Output = itm.val
+			case "input":
+				if itm.val == "-" {
+					bank.NoDasm = true
+				} else {
+					bank.Input = itm.val
+				}
 			}
 
 		case "address", "offset", "size":
@@ -326,10 +343,6 @@ func (p *parser) parseBank() error {
 		default:
 			return parseError(itm, "Invalid item: %s", itm.val)
 		}
-	}
-
-	if _, ok := keys["output"]; !ok {
-		return fmt.Errorf("[%d:%d] Missing required Output setting in bank", itm.line, itm.val)
 	}
 
 	p.config.Banks = append(p.config.Banks, bank)
@@ -409,86 +422,6 @@ func (p *parser) parseBankWindow() ([]*types.BankWindow, error) {
 	return list, nil
 }
 
-func (p *parser) parseRamBank() error {
-	itm := p.next()
-	if itm.typ != lex_OpenBracket {
-		return parseError(itm, "Missing open bracket after RamBank")
-	}
-
-	keys := make(map[string]lexItem)
-	bank := &types.RamBank{}
-	for {
-		itm = p.next()
-		if itm.typ == lex_Semicolon {
-			continue
-		}
-
-		if itm.typ == lex_CloseBracket {
-			break
-		}
-
-		if itm.typ == lex_EOF {
-			return fmt.Errorf("Early EOF")
-		}
-
-		if itm.typ != lex_Ident {
-			return parseError(itm, "Expected IDENT")
-		}
-
-		if other, ok := keys[strings.ToLower(itm.val)]; ok {
-			return fmt.Errorf("[%d:%d] %s already provided on line %d column %d",
-				itm.line, itm.col, itm.val, other.line, other.col)
-		}
-		keys[strings.ToLower(itm.val)] = itm
-
-		prev := itm
-		switch strings.ToLower(prev.val) {
-		case "name", "output":
-			itm = p.next()
-			if itm.typ != lex_String {
-				return parseError(itm, "%s expects a string", prev.val)
-			}
-
-			switch strings.ToLower(prev.val) {
-			case "name":
-				bank.Name = itm.val
-			case "output":
-				bank.Output = itm.val
-			}
-
-		case "address", "offset", "size":
-			itm = p.next()
-			if itm.typ != lex_Number {
-				return parseError(itm, "%s requires lex_Number", prev.val)
-			}
-
-			num, err := parseNumber(itm.val)
-			if err != nil {
-				return err
-			}
-
-			switch strings.ToLower(prev.val) {
-			case "address":
-				bank.Address = num
-			case "offset":
-				bank.Offset = num
-			case "size":
-				bank.Size = num
-			}
-
-		case "labels":
-			vals, err := p.parseLabels()
-			if err != nil {
-				return err
-			}
-			bank.CfgLabels = vals
-		}
-	}
-
-	p.config.RamBanks = append(p.config.RamBanks, bank)
-	return nil
-}
-
 func (p *parser) parseWindowDefs() ([]*types.WindowDef, error) {
 	itm := p.next()
 	if itm.typ != lex_OpenSquare {
@@ -556,20 +489,6 @@ func (p *parser) parseWindowDefs() ([]*types.WindowDef, error) {
 					win.Start = num
 				} else {
 					win.Size = num
-				}
-
-			case "type":
-				if val.typ != lex_Ident {
-					return nil, parseError(itm, "%s requires lex_Ident", key.val)
-				}
-
-				switch strings.ToLower(val.val) {
-				case "ram":
-					win.Type = types.Window_Ram
-				case "rom":
-					win.Type = types.Window_Rom
-				default:
-					return nil, parseError(itm, "Invalid window type: %s", val.val)
 				}
 
 			default:

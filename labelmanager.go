@@ -18,22 +18,22 @@ type LabelManager struct {
 	defs []*types.WindowDef
 }
 
-func NewLabelManager(global []*types.Label, banks []*types.Bank, windows []*types.WindowDef) *LabelManager {
+func NewLabelManager(global types.ConfigGlobal, banks []*types.Bank, windows []*types.WindowDef) *LabelManager {
 	lm := &LabelManager{
-		Windows: make(map[string]*types.Bank),
-		Banks:   make(map[string]*types.Bank),
+		Windows:     make(map[string]*types.Bank),
+		Banks:       make(map[string]*types.Bank),
+		Global:      make(map[uint]*types.Label),
 		WindowAddrs: make(map[uint]string),
-		Global:  make(map[uint]*types.Label),
 	}
 
-	for _, lbl := range global {
+	for _, lbl := range global.Labels {
 		for i := lbl.Address; i < lbl.Address+lbl.Size; i++ {
 			lm.Global[i] = lbl
 		}
 	}
 
 	for _, bank := range banks {
-		lm.Banks[bank.Name] = bank
+		lm.Banks[bank.GetName()] = bank
 	}
 
 	lm.defs = windows

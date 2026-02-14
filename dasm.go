@@ -3,7 +3,7 @@ package dasm
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	//"strconv"
 	//"strings"
 
@@ -15,20 +15,47 @@ import (
 var verbose bool
 
 func FromConfig(cfg *types.Config) error {
-	abs, err := filepath.Abs(cfg.Global.Input)
-	if err != nil {
-		return err
+	inputs := cfg.GetInputs()
+	raws := make(map[string][]byte)
+	for _, filename := range inputs {
+		// explicit no input file
+		if filename == "-" {
+			continue
+		}
+
+		if _, ok := raws[filename]; ok {
+			continue
+		}
+
+		raw, err := os.ReadFile(filename)
+		if err != nil {
+			return fmt.Errorf("Error reading input %q: %s", cfg.Global.Input, err)
+		}
+		raws[filename] = raw
 	}
 
-	raw, err := os.ReadFile(abs)
-	if err != nil {
-		return fmt.Errorf("Error reading input %q: %s", cfg.Global.Input, err)
-	}
-
-	lm := NewLabelManager(cfg.Global.Labels, cfg.Banks, cfg.Global.Windows)
+	lm := NewLabelManager(cfg.Global, cfg.Banks, cfg.Global.Windows)
 	lm.Init()
 
 	for _, bank := range cfg.Banks {
+		if bank.NoDasm {
+			continue
+		}
+
+		var raw []byte
+		if bank.Input != "" {
+			raw = raws[bank.Input]
+		} else if cfg.Global.Input != "" {
+			raw = raws[cfg.Global.Input]
+		} else {
+			fmt.Println("bank %s has no input.  skipping.", bank.Name)
+			continue
+		}
+
+		if bank.Size == 0 {
+			bank.Size = uint(len(raw[bank.Offset:]))
+		}
+
 		// ranges, specifically
 		for index := uint(0); index < bank.Size; {
 			// index into raw
@@ -52,13 +79,11 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
-			//fmt.Printf("processing range [%s:$%04X] %#v\n", bank.Name, address, rng)
 			dd := &types.DecodedData{
 				Data: []int{},
 				Newline: true,
 				Stride: int(rng.Stride),
 			}
-			//addr := (bank.Address-bank.Offset)+offs
 
 			if rng.Type == types.Range_Words {
 				dd.IsWords = true
@@ -99,7 +124,7 @@ func FromConfig(cfg *types.Config) error {
 				lm.SetWindow(win.Window, win.Bank)
 			}
 
-			typ := bank.Type(address)
+			typ := bank.AddrType(address)
 			var decoded types.AsmLine
 
 			if typ != types.Range_Code {
@@ -116,12 +141,13 @@ func FromConfig(cfg *types.Config) error {
 				//instr.Instr.OpLength + instr.Instr.ArgLength
 				for i := uint(0); i < uint(instr.Instr.OpLength + instr.Instr.ArgLength); i++ {
 					// instruction runs into defined data
-					if bank.Type(address+i) != types.Range_Code {
+					if bank.AddrType(address+i) != types.Range_Code {
 						long_instr = true
 					}
 				}
 			}
 
+			// is instruction too long that it runs into a data range?
 			if long_instr {
 				dd := &types.DecodedData{
 					Data: []int{int(raw[offset])},
@@ -134,9 +160,6 @@ func FromConfig(cfg *types.Config) error {
 
 			length := uint(instr.Instr.OpLength + instr.Instr.ArgLength)
 			instr.Address = address //offs + bank.Address-bank.Offset
-			//decoded.Instr = instr
-			//decoded.Raw = instr.Raw()
-			//vb("%04X %#v", offs, decoded)
 
 			switch instr.Instr.AddrMode {
 			case types.AddrMode_Accumulator,
@@ -145,15 +168,28 @@ func FromConfig(cfg *types.Config) error {
 				// nope
 
 			case types.AddrMode_Relative:
-				//addr := uint((instr.Arg+1) + int(offs + bank.Address-bank.Offset))+1
 				reladdr := uint(int(address) + instr.Arg + 2)
-				//fmt.Printf("[%s:$%04X] rel label to $%04X (%d)\n",
-				//	bank.Name, offs+bank.Address-bank.Offset, addr, instr.Arg)
-				//bank.AutoLabels[addr] = types.NewLabel(addr, fmt.Sprintf("L%04X", addr))
 				lm.SetLabel(types.NewLabel(reladdr, fmt.Sprintf("L%04X", reladdr)))
 
 			default:
-				lbl := lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf("L%04X", instr.Arg)))
+				var lbl *types.Label
+				doLabel := false
+
+				lblPref := "var_"
+				switch instr.Instr.Name {
+				case "JMP", "JSR", "BEQ", "BNE", "BPL", "BVC", "BVS", "BMI":
+					lblPref = "L"
+					doLabel = true
+				default:
+					if cfg.Global.AutoVars {
+						doLabel = true
+					}
+				}
+
+				if doLabel {
+					lbl = lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf(lblPref+"%04X", instr.Arg)))
+				}
+
 				if instr.Instr.Name == "JSR" && lbl != nil && lbl.ParamSize > 0 {
 					if length+lbl.ParamSize+index > uint(len(raw)) {
 						return fmt.Errorf("parameter for label %s out of bounds", lbl.Name)
@@ -188,6 +224,11 @@ func FromConfig(cfg *types.Config) error {
 	verbose = false
 
 	for _, bank := range cfg.Banks {
+		if bank.NoDasm || bank.Output == "" {
+			// TODO: write out label defs
+			continue
+		}
+
 		output, err := os.Create(bank.Output)
 		if err != nil {
 			return err

@@ -10,7 +10,9 @@ import (
 
 type Bank struct {
 	Name   string
+	Input  string
 	Output string
+	NoDasm bool
 
 	Address uint
 	Offset  uint
@@ -45,14 +47,11 @@ func NewBank() *Bank {
 	}
 }
 
-func (b *Bank) Label(address uint) *Label {
-	if lbl, ok := b.Labels[address]; ok {
-		return lbl
-	}
-	return nil
+func (b *Bank) GetName() string {
+	return b.Name
 }
 
-func (b *Bank) Type(address uint) RangeType {
+func (b *Bank) AddrType(address uint) RangeType {
 	if rng, ok := b.Ranges[address]; ok {
 		return rng.Type
 	}
@@ -91,10 +90,6 @@ func (b *Bank) String() string {
 }
 
 func (b *Bank) verify() error {
-	if strings.TrimSpace(b.Output) == "" {
-		return fmt.Errorf("Output missing")
-	}
-
 	if b.Address + b.Size - 1 > 0xFFFF {
 		return fmt.Errorf("Size goes beyond $FFFF: $%04X + $%04X = $%04X",b.Address, b.Size, b.Address + b.Size)
 	}
@@ -129,13 +124,17 @@ func (b *Bank) verify() error {
 	}
 
 	for _, rng := range b.CfgRanges {
-		err := rng.Verify(b.Address, b.Address+b.Size)
+		var err error
+		if b.Size == 0 {
+			err = rng.Verify(b.Address, b.Address+0x8000)
+		} else {
+			err = rng.Verify(b.Address, b.Address+b.Size)
+		}
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 		var lbl *Label
-		//var ok bool
 		if rng.Size == 0 {
 			errs = append(errs, fmt.Errorf("Range with no size: %#v", rng))
 		}
@@ -174,26 +173,25 @@ func (b *Bank) verify() error {
 }
 
 func (b *Bank) GetLabel(address uint) *Label {
-	if b.Address <= address && address < b.Address + b.Size {
-		if lbl, ok := b.Labels[address]; ok {
-			return lbl
-		}
-		return nil
+	if lbl, ok := b.Labels[address]; ok {
+		return lbl
 	}
 	return nil
 }
 
-type RamBank struct {
-	Name   string
-	Output string
+func (b *Bank) SetLabel(lbl *Label) *Label {
+	if !(b.Address <= lbl.Address && lbl.Address < b.Address + b.Size) {
+		return nil
+	}
 
-	Address uint
-	Size    uint
-	Offset  uint
+	if l, ok := b.Labels[lbl.Address]; ok {
+		if l.Name == "" {
+			l.Name = lbl.Name
+		}
+		return l
+	}
 
-	CfgLabels []*Label
+	b.Labels[lbl.Address] = lbl
+	return lbl
 }
 
-func (b *RamBank) verify() error {
-	return nil
-}

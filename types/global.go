@@ -13,16 +13,16 @@ type ConfigGlobal struct {
 	Architecture ArchitectureType
 
 	//CommentColumn int
-	InstrIndent   int
-	AsmWidth      int
-
+	InstrIndent int
+	AsmWidth    int
+	AutoVars    bool
 
 	Windows []*WindowDef
 	Labels  []*Label
 	Include []string
 }
 
-func (g ConfigGlobal) verify() error {
+func (g *ConfigGlobal) verify() error {
 	if strings.TrimSpace(g.Input) == "" {
 		return fmt.Errorf("Input missing")
 	}

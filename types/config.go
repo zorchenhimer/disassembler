@@ -8,7 +8,21 @@ import (
 type Config struct {
 	Global   ConfigGlobal
 	Banks    []*Bank
-	RamBanks []*RamBank
+}
+
+func (c *Config) GetInputs() []string {
+	files := []string{}
+	if c.Global.Input != ""  {
+		files = append(files, c.Global.Input)
+	}
+
+	for _, bank := range c.Banks {
+		if bank.Input != "" && bank.Input != "-" {
+			files = append(files, bank.Input)
+		}
+	}
+
+	return files
 }
 
 func (c *Config) Verify() error {
@@ -45,30 +59,15 @@ func (c *Config) Verify() error {
 		}
 	}
 
-	for _, bank := range c.RamBanks {
-		err = bank.verify()
-		if err != nil {
-			return err
-		}
-	}
-
 	for _, win := range c.Global.Windows {
 		if win.Init == "" {
 			continue
 		}
 
 		found := false
-		if win.Type == Window_Rom {
-			for _, bank := range c.Banks {
-				if bank.Name == win.Init {
-					found = true
-				}
-			}
-		} else {
-			for _, bank := range c.RamBanks {
-				if bank.Name == win.Init {
-					found = true
-				}
+		for _, bank := range c.Banks {
+			if bank.Name == win.Init {
+				found = true
 			}
 		}
 
@@ -83,22 +82,14 @@ func (c *Config) Verify() error {
 
 func (c *Config) GoString() string {
 	banks := []string{}
-	ramBanks := []string{}
 
 	for _, bank := range c.Banks {
-		//banks = append(banks, bank.GoString())
 		banks = append(banks, fmt.Sprintf("%#v", bank))
 	}
 
-	for _, bank := range c.RamBanks {
-		//banks = append(banks, bank.GoString())
-		ramBanks = append(ramBanks, fmt.Sprintf("%#v", bank))
-	}
-
-	return fmt.Sprintf("{Config Global:%#v Banks:[%s] RamBanks:[%s]}",
+	return fmt.Sprintf("{Config Global:%#v Banks:[%s]}",
 		c.Global,
 		strings.Join(banks, ", "),
-		strings.Join(ramBanks, ", "),
 	)
 }
 

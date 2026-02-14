@@ -16,7 +16,11 @@ func ReadFile(filename string) (*types.Config, error) {
 		return nil, fmt.Errorf("Unable to read %s: %w", filename, err)
 	}
 
-	return realRead(filepath.Dir(filename), raw, false)
+	cfg, err := realRead(filepath.Dir(filename), raw, false)
+	if err != nil {
+		return cfg, fmt.Errorf("%s: %w", filename, err)
+	}
+	return cfg, nil
 }
 
 func Read(r io.Reader) (*types.Config, error) {
@@ -46,16 +50,15 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 		fullname := filepath.Join(basedir, file)
 		incraw, err := os.ReadFile(fullname)
 		if err != nil {
-			return nil, fmt.Errorf("Error reading included file %s: %w", file, err)
+			return nil, fmt.Errorf("%s: %w", file, err)
 		}
 
 		inc, err := realRead(filepath.Dir(fullname), incraw, true)
 		if err != nil {
-			return nil, fmt.Errorf("Error reading included file %s: %w", file, err)
+			return nil, fmt.Errorf("%s: %w", file, err)
 		}
 
 		cfg.Banks = append(cfg.Banks, inc.Banks...)
-		cfg.RamBanks = append(cfg.RamBanks, inc.RamBanks...)
 	}
 
 	if nested {
