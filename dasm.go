@@ -5,7 +5,7 @@ import (
 	"os"
 	//"path/filepath"
 	//"strconv"
-	//"strings"
+	"strings"
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instructions"
@@ -299,6 +299,77 @@ func FromConfig(cfg *types.Config) error {
 		}
 
 		output.Close()
+	}
+
+	if cfg.Global.MlbOutput != "" {
+		mlb, err := os.Create(cfg.Global.MlbOutput)
+		if err != nil {
+			return err
+		}
+		defer mlb.Close()
+
+		for addr, lbl := range lm.Global {
+			if lbl.Address != addr {
+				continue
+			}
+
+			t := "NesMemory"
+			if addr < 0x2000 { // 0x800-0x1FFF mirrors
+				t = "NesInternalRam"
+			} else if addr < 0x4400 {
+				t = "NesMemory"
+			}
+			parts := []string{t}
+
+			if lbl.Size > 1 {
+				parts = append(parts, fmt.Sprintf("%04X-%04X", lbl.Address, lbl.Address+lbl.Size-1))
+			} else {
+				parts = append(parts, fmt.Sprintf("%04X", lbl.Address))
+			}
+
+			parts = append(parts, lbl.Name)
+
+			// TODO: combine these?
+			if lbl.CommentBlock != "" {
+				parts = append(parts, "\\n"+strings.ReplaceAll(lbl.CommentBlock, "\n", "\\n"))
+			} else if lbl.CommentInline != "" {
+				parts = append(parts, strings.ReplaceAll(lbl.CommentInline, "\n", "\\n"))
+			}
+
+			fmt.Fprintln(mlb, strings.Join(parts, ":"))
+		}
+
+		for _, bank := range lm.Banks {
+			t := "NesPrgRom"
+			if bank.NoDasm {
+				t = "NesWorkRam"
+			}
+
+			for addr, lbl := range bank.Labels {
+				if lbl.Address != addr {
+					continue
+				}
+
+				parts := []string{t}
+
+				if lbl.Size > 1 {
+					parts = append(parts, fmt.Sprintf("%04X-%04X", bank.Offset+(lbl.Address-bank.Address), bank.Offset+(lbl.Address-bank.Address)+lbl.Size-1))
+				} else {
+					parts = append(parts, fmt.Sprintf("%04X", bank.Offset+(lbl.Address-bank.Address)))
+				}
+
+				parts = append(parts, lbl.Name)
+
+				// TODO: combine these?
+				if lbl.CommentBlock != "" {
+					parts = append(parts, "\\n"+strings.ReplaceAll(lbl.CommentBlock, "\n", "\\n"))
+				} else if lbl.CommentInline != "" {
+					parts = append(parts, strings.ReplaceAll(lbl.CommentInline, "\n", "\\n"))
+				}
+
+				fmt.Fprintln(mlb, strings.Join(parts, ":"))
+			}
+		}
 	}
 
 	return nil
