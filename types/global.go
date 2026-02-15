@@ -8,6 +8,7 @@ import (
 type ConfigGlobal struct {
 	Input     string
 	MlbOutput string
+	Output    string // ASM output for labels
 
 	Comments     CommentLevel
 	Architecture ArchitectureType

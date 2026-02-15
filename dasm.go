@@ -6,6 +6,8 @@ import (
 	//"path/filepath"
 	//"strconv"
 	"strings"
+	"slices"
+	"cmp"
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instructions"
@@ -55,7 +57,6 @@ func FromConfig(cfg *types.Config) error {
 		if bank.Size == 0 {
 			bank.Size = uint(len(raw[bank.Offset:]))
 		}
-
 
 		lm.Init()
 		for index := uint(0); index < bank.Size ; {
@@ -264,15 +265,80 @@ func FromConfig(cfg *types.Config) error {
 
 	verbose = false
 
+	if cfg.Global.Output != "" {
+		output, err := os.Create(cfg.Global.Output)
+		if err != nil {
+			return err
+		}
+
+		list := []*types.Label{}
+		longest := 0
+		for addr, lbl := range lm.Global {
+			if lbl.Address != addr {
+				continue
+			}
+
+			if len(lbl.Name) > longest {
+				longest = len(lbl.Name)
+			}
+			list = append(list, lbl)
+		}
+
+		slices.SortFunc(list, func(a, b *types.Label) int {
+			return cmp.Compare(a.Address, b.Address)
+		})
+
+		for _, lbl := range list {
+			fmt.Fprintf(output, "%-*s := $%04X\n", longest, lbl.Name, lbl.Address)
+		}
+
+		output.Close()
+	} else if len(lm.Global) > 0 {
+		fmt.Printf("Warning: not writing Global RAM labels anywhere!\n")
+	}
+
 	for _, bank := range cfg.Banks {
-		if bank.NoDasm || bank.Output == "" {
-			// TODO: write out label defs
+		if bank.Output == "" {
+			if bank.Input == "-" {
+				if len(bank.Labels) > 0 {
+					fmt.Printf("Warning: not writing RAM labels for bank %q anywhere!\n", bank.Name)
+				}
+			} else {
+				fmt.Printf("Warning: not writing disassembly for bank %q anywhere!\n", bank.Name)
+			}
 			continue
 		}
 
 		output, err := os.Create(bank.Output)
 		if err != nil {
 			return err
+		}
+
+		// output labels
+		if bank.NoDasm {
+			list := []*types.Label{}
+			longest := 0
+			for addr, lbl := range bank.Labels {
+				if lbl.Address != addr {
+					continue
+				}
+
+				if len(lbl.Name) > longest {
+					longest = len(lbl.Name)
+				}
+				list = append(list, lbl)
+			}
+
+			slices.SortFunc(list, func(a, b *types.Label) int {
+				return cmp.Compare(a.Address, b.Address)
+			})
+
+			for _, lbl := range list {
+				fmt.Fprintf(output, "%-*s := $%04X\n", longest, lbl.Name, lbl.Address)
+			}
+
+			output.Close()
+			continue
 		}
 
 		formatter := NewFormatter(output, lm)
