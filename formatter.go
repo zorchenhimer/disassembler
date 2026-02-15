@@ -25,6 +25,18 @@ func NewFormatter(w io.Writer, lm types.LabelManager) *Formatter {
 
 func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) error {
 	var err error
+
+	var b2, b3 *types.Label
+	if _, ok := line.(*types.DecodedInstr); ok {
+		//b1 := f.lm.GetLabel(address)
+		if line.Length() == 2 {
+			b2 = f.lm.GetLabel(address+1)
+		} else if line.Length() == 3 {
+			b2 = f.lm.GetLabel(address+1)
+			b3 = f.lm.GetLabel(address+2)
+		}
+	}
+
 	for lnum := 0; lnum < line.LineCount(); lnum++ {
 		offs, asm := line.Asm(lnum, f.lm)
 		lbl := f.lm.GetLabel(address+offs)
@@ -64,6 +76,15 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 				}
 			}
 		}
+
+		if b2 != nil {
+			fmt.Fprintf(f.w, "%s := * + 1\n", b2.Name)
+		}
+		if b3 != nil && b2 != b3 {
+			fmt.Fprintf(f.w, "%s := * + 2\n", b3.Name)
+		}
+		b2 = nil
+		b3 = nil
 
 		if f.CommentLevel > types.Comment_None {
 			if f.CommentLevel == types.Comment_Full && asm != "" {
