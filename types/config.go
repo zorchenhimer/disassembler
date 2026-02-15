@@ -41,6 +41,12 @@ func (c *Config) Verify() error {
 			return err
 		}
 
+		if bank.Input == "" && c.Global.Input == "" {
+			return fmt.Errorf("Bank missing input file")
+		} else if bank.Input == "" && c.Global.Input != "" {
+			bank.Input = c.Global.Input
+		}
+
 		for _, win := range bank.CfgWindows {
 			if win.Address < bank.Address || win.Address >= bank.Address+bank.Size {
 				return fmt.Errorf("BankWindow switch at %04X is out of range of bank %s",

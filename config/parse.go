@@ -294,9 +294,8 @@ func (p *parser) parseBank() error {
 			case "input":
 				if itm.val == "-" {
 					bank.NoDasm = true
-				} else {
-					bank.Input = itm.val
 				}
+				bank.Input = itm.val
 			}
 
 		case "address", "offset", "size":
@@ -731,6 +730,9 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 				} else {
 					rng.Comment = val.val
 				}
+
+			default:
+				return nil, parseError(itm, "invalid item in range: %s", itm.val)
 			}
 		}
 
