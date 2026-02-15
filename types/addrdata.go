@@ -203,5 +203,5 @@ func (di *DecodedInstr) RawStr() string {
 	for _, r := range raw {
 		rawstr = append(rawstr, fmt.Sprintf("%02X", r))
 	}
-	return fmt.Sprintf("%-8s", strings.Join(rawstr, " "))
+	return fmt.Sprintf("%s", strings.Join(rawstr, " "))
 }

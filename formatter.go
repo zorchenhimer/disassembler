@@ -53,7 +53,11 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 			}
 
 			for _, c := range cb {
-				fmt.Fprintln(f.w, ";", strings.TrimSpace(c))
+				c = strings.TrimSpace(c)
+				if len(c) > 0 && c[0] == ';' {
+					c = c[1:]
+				}
+				fmt.Fprintln(f.w, ";", c)
 			}
 		}
 
@@ -62,7 +66,41 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 			parts = append(parts, strings.Repeat(" ", f.Indent-1))
 		}
 
-		parts = append(parts, fmt.Sprintf("%-*s", f.AsmWidth-1, asm))
+		skipasm := false
+		if f.CommentLevel > types.Comment_None {
+			asmlen := len(asm)
+			if lbl != nil && lbl.CommentInline != "" && address+offs == lbl.Address {
+				//parts = append(parts, ";")
+				for i, cline := range strings.Split(lbl.CommentInline, "\n") {
+					if i == 0 {
+						skipasm = true
+						parts = append(parts, fmt.Sprintf("%-*s", f.AsmWidth-1, asm +" ; "+ cline))
+						if f.CommentLevel > types.Comment_None {
+							if f.CommentLevel == types.Comment_Full && asm != "" {
+								parts = append(parts, ";")
+								parts = append(parts, fmt.Sprintf("%04X", address+offs))
+								parts = append(parts, line.RawStr())
+							}
+						}
+					} else {
+						parts = append(parts, fmt.Sprintf("%-*s; %s", asmlen+1, "", cline))
+					}
+					_, err = fmt.Fprintln(f.w, strings.TrimRight(strings.Join(parts, " "), " "))
+					if err != nil {
+						return err
+					}
+					parts = []string{}
+					if f.Indent > 0 {
+						parts = append(parts, strings.Repeat(" ", f.Indent-1))
+					}
+				}
+				continue
+			}
+		}
+
+		if !skipasm {
+			parts = append(parts, fmt.Sprintf("%-*s", f.AsmWidth-1, asm))
+		}
 
 		if lbl != nil && address+offs == lbl.Address {
 			if (lbl.Name != "" && lbl.Name != ":") || lbl.References > 0 {
@@ -77,6 +115,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 			}
 		}
 
+		// Intra-instruction labels
 		if b2 != nil {
 			fmt.Fprintf(f.w, "%s := * + 1\n", b2.Name)
 		}
@@ -86,22 +125,11 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 		b2 = nil
 		b3 = nil
 
-		if f.CommentLevel > types.Comment_None {
+		if f.CommentLevel > types.Comment_None && !skipasm {
 			if f.CommentLevel == types.Comment_Full && asm != "" {
 				parts = append(parts, ";")
 				parts = append(parts, fmt.Sprintf("%04X", address+offs))
 				parts = append(parts, line.RawStr())
-			}
-
-			if lbl != nil && lbl.CommentInline != "" && address+offs == lbl.Address {
-				parts = append(parts, ";")
-				for i, cline := range strings.Split(lbl.CommentInline, "\n") {
-					if i == 0 {
-						parts = append(parts, cline)
-					} else {
-						parts = append(parts, fmt.Sprintf("\n%-*s; %s", f.AsmWidth+f.Indent+16, "", cline))
-					}
-				}
 			}
 		}
 
