@@ -79,7 +79,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 							if f.CommentLevel == types.Comment_Full && asm != "" {
 								parts = append(parts, ";")
 								parts = append(parts, fmt.Sprintf("%04X", address+offs))
-								parts = append(parts, line.RawStr())
+								parts = append(parts, line.RawStr(i))
 							}
 						}
 					} else {
@@ -129,7 +129,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 			if f.CommentLevel == types.Comment_Full && asm != "" {
 				parts = append(parts, ";")
 				parts = append(parts, fmt.Sprintf("%04X", address+offs))
-				parts = append(parts, line.RawStr())
+				parts = append(parts, line.RawStr(lnum))
 			}
 		}
 

@@ -123,6 +123,9 @@ Otherwise, `CommentInline` is set.
 Any address range not defined as a range is assumed to be code.  The default
 type of a defined range is `Bytes`.
 
+A Range of type `Addresses` will resolve all values to labels and create
+auto-labels if needed.  Type `words` does not resolve labels.
+
 | Option          | Type   | Description |
 |:----------------|:------:|:------------|
 | `Address`       | uint   | Start address for range. |
@@ -130,11 +133,10 @@ type of a defined range is `Bytes`.
 | `Dysplay`       | ident  | `Binary`, `Decimal`, `Hexadecimal`, `Label`.  FIXME: unimplemented. |
 | `End`           | uint   | End address for range. |
 | `Name`          | string | Create a label with this name for the whole defined range. |
-| `ResolveLabels` | bool   | FIXME: Unimplemented. |
 | `RtsLabels`     | bool   | FIXME: Unimplemented. |
 | `Size`          | uint   | Size of range. |
 | `Stride`        | uint   | Number of values to output per line. A stride of `2` will output two bytes with a `Bytes` range, but four bytes with a `Words` range. |
-| `Type`          | ident  | Type of range: `Code`, `Bytes`, `Words`. Default for defined ranges is `Bytes`. |
+| `Type`          | ident  | Type of range: `Addresses`, `Bytes`, `Words`. Default for defined ranges is `Bytes`. |
 
 #### Windows
 

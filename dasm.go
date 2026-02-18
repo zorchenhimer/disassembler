@@ -237,8 +237,12 @@ func FromConfig(cfg *types.Config) error {
 				Stride: int(rng.Stride),
 			}
 
-			if rng.Type == types.Range_Words {
-				dd.IsWords = true
+			if rng.Type == types.Range_Words || rng.Type == types.Range_Addresses {
+				if rng.Type == types.Range_Words {
+					dd.IsWords = true
+				} else {
+					dd.IsAddrs = true
+				}
 
 				for i := uint(0); i < rng.Size; i+=2 {
 					dd.Data = append(dd.Data, int(raw[offset+i]) | (int(raw[offset+i+1]) << 8))

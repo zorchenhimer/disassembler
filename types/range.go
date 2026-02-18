@@ -18,7 +18,6 @@ type Range struct {
 	Type    RangeType
 	Display RangeDisplay
 
-	ResolveLabels bool
 	RtsLabels     bool
 }
 
@@ -35,7 +34,6 @@ func (r *Range) Duplicate() *Range {
 		Type:    r.Type,
 		Display: r.Display,
 
-		ResolveLabels: r.ResolveLabels,
 		RtsLabels:     r.RtsLabels,
 	}
 }
@@ -46,12 +44,18 @@ const (
 	Range_Code RangeType = iota
 
 	// Block of bytes.
-	// Output respects stride.  Defaults to 8.
+	// Stride defaults to 8.
 	Range_Bytes
 
 	// List of two-byte words
-	// Output respects stride.  Defaults to 1 if labels, 8 otherwise
+	// Stride defaults to 8.
+	// No labels will be used or created.
 	Range_Words
+
+	// List of two-byte labels.
+	// Stride defaults to 1.
+	// Auto-labels will be created for each entry.
+	Range_Addresses
 )
 
 func (rt RangeType) String() string {

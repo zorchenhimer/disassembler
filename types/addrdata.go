@@ -9,6 +9,7 @@ type DecodedData struct {
 	Data    []int
 	Stride  int
 	IsWords bool
+	IsAddrs bool
 	Newline bool
 }
 
@@ -36,7 +37,7 @@ func (dd *DecodedData) LineCount() int {
 
 func (dd *DecodedData) Length() uint {
 	l := uint(len(dd.Data))
-	if dd.IsWords {
+	if dd.IsWords || dd.IsAddrs {
 		return l*2
 	}
 	return l
@@ -45,16 +46,19 @@ func (dd *DecodedData) Length() uint {
 func (dd *DecodedData) Op() string {
 	if dd.IsWords {
 		return ".word"
+	} else if dd.IsAddrs {
+		return ".addr"
 	}
 	return ".byte"
 }
 
-// TODO: use stride (will need to account for multiline stuff in other areas.
 func (dd *DecodedData) ArgStr(lm LabelManager, offset int) string {
 	vals := []string{}
 	for i := offset; i < len(dd.Data) && i < offset + dd.Stride; i++ {
 		dat := dd.Data[i]
-		if dd.IsWords {
+
+		// Only resolve labels if range is of Labels/Pointers
+		if dd.IsAddrs {
 			lbl := lm.GetLabel(uint(dat))
 			if lbl != nil {
 				if lbl.Address != uint(dat) {
@@ -65,6 +69,9 @@ func (dd *DecodedData) ArgStr(lm LabelManager, offset int) string {
 			} else {
 				vals = append(vals, fmt.Sprintf("$%04X", dat))
 			}
+
+		} else if dd.IsWords {
+			vals = append(vals, fmt.Sprintf("$%04X", dat))
 		} else {
 			vals = append(vals, fmt.Sprintf("$%02X", dat))
 		}
@@ -79,16 +86,34 @@ func (dd *DecodedData) Asm(line int, lm LabelManager) (uint, string) {
 	argstr := dd.ArgStr(lm, offs)
 
 	// byte offset
-	if dd.IsWords {
+	if dd.IsWords || dd.IsAddrs {
 		offs *= 2
 	}
 
 	return uint(offs), dd.Op() + " " + argstr
 }
 
-func (dd *DecodedData) RawStr() string {
-		//  11 22 33
-	return "        "
+func (dd *DecodedData) RawStr(ln int) string {
+	if dd.IsAddrs {
+		start := dd.Stride * ln
+		end := start + dd.Stride
+
+		if start > len(dd.Data) {
+			return ""
+		}
+
+		if end > len(dd.Data) {
+			end = len(dd.Data) // todo verify this
+		}
+
+		vals := []string{}
+		for _, val := range dd.Data[start:end] {
+			vals = append(vals, fmt.Sprintf("%04X", val))
+		}
+		return strings.Join(vals, " ")
+	}
+
+	return ""
 }
 
 type DecodedInstr struct {
@@ -197,7 +222,11 @@ func (di DecodedInstr) Raw() []byte {
 	return append([]byte{di.Opcode}, di.Args...)
 }
 
-func (di *DecodedInstr) RawStr() string {
+func (di *DecodedInstr) RawStr(ln int) string {
+	if ln > 0 {
+		return ""
+	}
+
 	raw := di.Raw()
 	rawstr := []string{}
 	for _, r := range raw {

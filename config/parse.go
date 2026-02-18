@@ -679,6 +679,8 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 					rng.Type = types.Range_Code
 				case "words":
 					rng.Type = types.Range_Words
+				case "addresses", "addrs":
+					rng.Type = types.Range_Addresses
 				default:
 					return nil, parseError(itm, "Invalid range type: %s", val.val)
 				}
@@ -701,25 +703,18 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 					return nil, parseError(itm, "Invalid range display: %s", val.val)
 				}
 
-			case "resolvelabels", "rtslabels":
+			case "rtslabels":
 				if val.typ != lex_Ident {
 					return nil, parseError(itm, "%s requires lex_Ident", key.val)
 				}
 
-				b := false
 				switch strings.ToLower(val.val) {
 				case "true":
-					b = true
+					rng.RtsLabels = true
 				case "false":
-					b = false
+					rng.RtsLabels = false
 				default:
 					return nil, parseError(itm, "%s reqires true/false, got %s", key.val, val.val)
-				}
-
-				if strings.ToLower(key.val) == "resolvelabels" {
-					rng.ResolveLabels = b
-				} else {
-					rng.RtsLabels = b
 				}
 
 			case "name", "comment":
