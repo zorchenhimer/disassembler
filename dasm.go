@@ -175,6 +175,7 @@ func FromConfig(cfg *types.Config) error {
 			}
 
 			var lbl *types.Label
+			var last *types.Label
 			var crng *types.Range = rng // current range
 			for i := uint(0); i < rng.Size; i++ {
 				l := bank.Labels[i+rng.Address]
@@ -188,6 +189,12 @@ func FromConfig(cfg *types.Config) error {
 					split = true
 					lbl = l
 				}
+
+				// Don't split if we find the same label that just split the range.
+				if l == last {
+					split = false
+				}
+				last = l
 
 				if split {
 					prng := crng

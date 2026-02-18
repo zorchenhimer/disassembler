@@ -23,12 +23,16 @@ func NewFormatter(w io.Writer, lm types.LabelManager) *Formatter {
 	return &Formatter{ w: w, lm: lm}
 }
 
+// FIXME: Refactor this function.  There's so much duplicated functionality
+//        that breaks on edge cases, especially with inline comments and
+//        intra-instruction labels.
+//        Inline comments should probably be assembled inside line.Asm()
 func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) error {
 	var err error
 
+	// If line as an instruction, find potential intra-instruction labels
 	var b2, b3 *types.Label
 	if _, ok := line.(*types.DecodedInstr); ok {
-		//b1 := f.lm.GetLabel(address)
 		if line.Length() == 2 {
 			b2 = f.lm.GetLabel(address+1)
 		} else if line.Length() == 3 {
@@ -41,11 +45,13 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 		offs, asm := line.Asm(lnum, f.lm)
 		lbl := f.lm.GetLabel(address+offs)
 
+		// newline for jmp and rts?
 		if offs == 0 && lnum > 0 && asm == "" {
 			fmt.Fprintln(f.w, "")
 			continue
 		}
 
+		// Print comment block before anything else
 		if lbl != nil && lbl.CommentBlock != "" && address+offs == lbl.Address {
 			cb := strings.Split(lbl.CommentBlock, "\n")
 			if !lastNewline {
@@ -66,11 +72,18 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 			parts = append(parts, strings.Repeat(" ", f.Indent-1))
 		}
 
+		// Inline comments
 		skipasm := false
 		if f.CommentLevel > types.Comment_None {
 			asmlen := len(asm)
 			if lbl != nil && lbl.CommentInline != "" && address+offs == lbl.Address {
 				//parts = append(parts, ";")
+				if lbl.Name == ":" { // fixes "::" anon labels
+					_, err = fmt.Fprintln(f.w, lbl.Name)
+				} else if lbl.Name != "" {
+					_, err = fmt.Fprintln(f.w, lbl.Name+":")
+				}
+
 				for i, cline := range strings.Split(lbl.CommentInline, "\n") {
 					if i == 0 {
 						skipasm = true
