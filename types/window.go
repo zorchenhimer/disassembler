@@ -5,8 +5,6 @@ type BankWindow struct {
 	// TODO: input validation with the config
 	Window  string
 	Bank    string
-
-	bnk *Bank
 }
 
 func (bw BankWindow) String() string {

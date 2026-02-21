@@ -101,6 +101,7 @@ func FromConfig(cfg *types.Config) error {
 				dd := &types.DecodedData{
 					Data: []int{int(raw[offset])},
 					IsWords: false,
+					Stride: 8,
 				}
 				bank.Decoded[address] = dd
 				index++
@@ -147,6 +148,7 @@ func FromConfig(cfg *types.Config) error {
 					dd := &types.DecodedData{
 						Data: []int{},
 						IsWords: false,
+						Stride: 8,
 					}
 
 					for i := uint(0); i < lbl.ParamSize; i++ {
@@ -242,6 +244,8 @@ func FromConfig(cfg *types.Config) error {
 				Data: []int{},
 				Newline: true,
 				Stride: int(rng.Stride),
+				Display: rng.Display,
+				RtsLabel:  rng.RtsLabels,
 			}
 
 			if rng.Type == types.Range_Words || rng.Type == types.Range_Addresses {

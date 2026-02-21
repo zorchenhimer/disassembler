@@ -6,11 +6,14 @@ import (
 )
 
 type DecodedData struct {
-	Data    []int
-	Stride  int
-	IsWords bool
-	IsAddrs bool
-	Newline bool
+	Data     []int
+	Stride   int
+	IsWords  bool
+	IsAddrs  bool
+	Newline  bool
+	RtsLabel bool
+
+	Display RangeDisplay
 }
 
 func (dd *DecodedData) InsertNewlineAfter() bool {
@@ -20,10 +23,6 @@ func (dd *DecodedData) InsertNewlineAfter() bool {
 func (dd *DecodedData) LineCount() int {
 	if len(dd.Data) < dd.Stride {
 		return 1
-	}
-
-	if dd.Stride == 0 {
-		dd.Stride = 8
 	}
 
 	count := len(dd.Data) / dd.Stride
@@ -55,25 +54,48 @@ func (dd *DecodedData) Op() string {
 func (dd *DecodedData) ArgStr(lm LabelManager, offset int) string {
 	vals := []string{}
 	for i := offset; i < len(dd.Data) && i < offset + dd.Stride; i++ {
-		dat := dd.Data[i]
+		dat := uint(dd.Data[i])
 
-		// Only resolve labels if range is of Labels/Pointers
 		if dd.IsAddrs {
-			lbl := lm.GetLabel(uint(dat))
-			if lbl != nil {
-				if lbl.Address != uint(dat) {
-					vals = append(vals, fmt.Sprintf("%s+%d:", lbl.Name, uint(dat)-lbl.Address))
+			var lbl *Label
+			if dd.RtsLabel {
+				// RTS Trick labels (one byte before the desired destination)
+				lbl = lm.SetLabel(NewLabel(dat+1, fmt.Sprintf("L%04X", dat+1)))
+				if lbl.Address != dat+1 {
+					// This would probably be an error with the config.  An RTS trick
+					// destination into the middle of a label is most likely a mistake.
+					vals = append(vals, fmt.Sprintf("%s-1%+d", lbl.Name, dat+1-lbl.Address))
 				} else {
-					vals = append(vals, lbl.Name)
+					vals = append(vals, fmt.Sprintf("%s-1", lbl.Name))
 				}
 			} else {
-				vals = append(vals, fmt.Sprintf("$%04X", dat))
+				lbl = lm.SetLabel(NewLabel(dat, fmt.Sprintf("L%04X", dat)))
+				if lbl.Address != dat {
+					offset := dat - lbl.Address
+					vals = append(vals, fmt.Sprintf("%s+%d", lbl.Name, offset))
+				} else {
+					vals = append(vals, fmt.Sprintf("%s", lbl.Name))
+				}
 			}
 
-		} else if dd.IsWords {
-			vals = append(vals, fmt.Sprintf("$%04X", dat))
 		} else {
-			vals = append(vals, fmt.Sprintf("$%02X", dat))
+
+			var intFmt string
+			switch dd.Display {
+			case Display_Binary:
+				intFmt = "%%%08b"
+
+			case Display_Decimal:
+				intFmt = "%d"
+
+			default: // Display_Hexadecimal
+				if dd.IsWords {
+					intFmt = "$%04X"
+				} else {
+					intFmt = "$%02X"
+				}
+			}
+			vals = append(vals, fmt.Sprintf(intFmt, dat))
 		}
 	}
 

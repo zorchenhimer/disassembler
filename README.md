@@ -130,10 +130,10 @@ auto-labels if needed.  Type `words` does not resolve labels.
 |:----------------|:------:|:------------|
 | `Address`       | uint   | Start address for range. |
 | `Comment`       | string | Create a label with this comment for the whole defined range. |
-| `Dysplay`       | ident  | `Binary`, `Decimal`, `Hexadecimal`, `Label`.  FIXME: unimplemented. |
+| `Display`       | ident  | Number display format: `Binary`, `Decimal`, `Hexadecimal`.  |
 | `End`           | uint   | End address for range. |
 | `Name`          | string | Create a label with this name for the whole defined range. |
-| `RtsLabels`     | bool   | FIXME: Unimplemented. |
+| `RtsLabels`     | bool   | Labels in an RTS Trick lookup table |
 | `Size`          | uint   | Size of range. |
 | `Stride`        | uint   | Number of values to output per line. A stride of `2` will output two bytes with a `Bytes` range, but four bytes with a `Words` range. |
 | `Type`          | ident  | Type of range: `Addresses`, `Bytes`, `Words`. Default for defined ranges is `Bytes`. |

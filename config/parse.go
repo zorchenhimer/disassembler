@@ -697,8 +697,6 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 					rng.Display = types.Display_Decimal
 				case "hex", "hexadecimal":
 					rng.Display = types.Display_Hexadecimal
-				case "label":
-					rng.Display = types.Display_Label
 				default:
 					return nil, parseError(itm, "Invalid range display: %s", val.val)
 				}

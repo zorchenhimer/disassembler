@@ -72,10 +72,9 @@ func (rt RangeType) String() string {
 type RangeDisplay int
 
 const (
-	Display_Decimal RangeDisplay = iota
+	Display_Hexadecimal RangeDisplay = iota
+	Display_Decimal
 	Display_Binary
-	Display_Hexadecimal
-	Display_Label
 )
 
 func (r *Range) Verify(begin, end uint) error {
@@ -108,6 +107,14 @@ func (r *Range) Verify(begin, end uint) error {
 			lines = append(lines, strings.TrimSpace(line))
 		}
 		r.Comment = strings.Join(lines, "\n")
+	}
+
+	if r.Stride == 0 {
+		if r.Type == Range_Addresses {
+			r.Stride = 1
+		} else {
+			r.Stride = 8
+		}
 	}
 
 	return nil
