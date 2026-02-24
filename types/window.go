@@ -2,7 +2,6 @@ package types
 
 type BankWindow struct {
 	Address uint
-	// TODO: input validation with the config
 	Window  string
 	Bank    string
 }

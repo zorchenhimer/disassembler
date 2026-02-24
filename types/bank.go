@@ -169,6 +169,10 @@ func (b *Bank) verify() error {
 		return fmt.Errorf("Errors encountered")
 	}
 
+	if b.Name == "" {
+		b.Name = fmt.Sprintf("bank_0x%06X", b.Offset)
+	}
+
 	return nil
 }
 
