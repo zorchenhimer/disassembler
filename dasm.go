@@ -119,7 +119,12 @@ func FromConfig(cfg *types.Config) error {
 
 			case types.AddrMode_Relative:
 				reladdr := uint(int(address) + instr.Arg + 2)
-				lm.SetLabel(types.NewLabel(reladdr, fmt.Sprintf("L%04X", reladdr)))
+				lblRts := ""
+				if reladdr > bank.Address && reladdr < bank.Address + bank.Size -1 && raw[reladdr - bank.Address + bank.Offset] == 0x60 {
+					lblRts = "_rts"
+				}
+				lm.SetLabel(types.NewLabel(reladdr, fmt.Sprintf("L%04X%s", reladdr, lblRts)))
+
 
 			default:
 				var lbl *types.Label
@@ -137,7 +142,11 @@ func FromConfig(cfg *types.Config) error {
 				}
 
 				if doLabel {
-					lbl = lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf(lblPref+"%04X", instr.Arg)))
+					lblRts := ""
+					if uint(instr.Arg) > bank.Address && uint(instr.Arg) < bank.Address + bank.Size -1 && raw[uint(instr.Arg) - bank.Address + bank.Offset] == 0x60 {
+						lblRts = "_rts"
+					}
+					lbl = lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf(lblPref+"%04X%s", instr.Arg, lblRts)))
 				}
 
 				if instr.Instr.Name == "JSR" && lbl != nil && lbl.ParamSize > 0 {
@@ -169,6 +178,9 @@ func FromConfig(cfg *types.Config) error {
 
 			index += length
 		}
+
+		// TODO: Join auto-labels for each byte in word ranges.  (ie, lblA is low
+		//       byte of word and lblB is high byte of word)
 
 		// Split ranges
 		for _, rng := range bank.CfgRanges {
@@ -309,17 +321,17 @@ func FromConfig(cfg *types.Config) error {
 
 		output.Close()
 	} else if len(lm.Global) > 0 {
-		fmt.Printf("Warning: not writing Global RAM labels anywhere!\n")
+		fmt.Printf("Warning: Not writing Global RAM labels anywhere!\n")
 	}
 
 	for _, bank := range cfg.Banks {
 		if bank.Output == "" {
 			if bank.Input == "-" {
 				if len(bank.Labels) > 0 {
-					fmt.Printf("Warning: not writing RAM labels for bank %q anywhere!\n", bank.Name)
+					fmt.Printf("Warning: Not writing RAM labels for bank %q anywhere!\n", bank.Name)
 				}
 			} else {
-				fmt.Printf("Warning: not writing disassembly for bank %q anywhere!\n", bank.Name)
+				fmt.Printf("Warning: Not writing disassembly for bank %q anywhere!\n", bank.Name)
 			}
 			continue
 		}
