@@ -7,5 +7,5 @@ run: all
 clean:
 	-rm bin/* testdata/*.asm
 
-bin/dasm: cmd/main.go *.go config/*.go instructions/*.go types/*.go
+bin/dasm: cmd/main.go *.go config/*.go instr_6502/*.go types/*.go
 	go build -o $@ $<

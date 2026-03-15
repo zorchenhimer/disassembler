@@ -1,4 +1,4 @@
-package instructions
+package instr6502
 
 import (
 	//"fmt"
@@ -231,7 +231,7 @@ var Instr_6502 map[byte]*types.Instruction = map[byte]*types.Instruction{
 }
 
 
-func TryInstr_6502(raw []byte) *types.DecodedInstr {
+func TryOfficial(raw []byte) *types.DecodedInstr {
 	if len(raw) == 0 {
 		return nil
 	}

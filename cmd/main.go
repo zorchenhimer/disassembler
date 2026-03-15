@@ -27,8 +27,6 @@ func main() {
 
 func run(args *Arguments) error {
 	cfg, err := config.ReadFile(args.ConfigFile)
-	//fmt.Printf("%#v\n", cfg)
-	//fmt.Printf("%#v\n", cfg.Banks)
 	if err != nil {
 		return err
 	}

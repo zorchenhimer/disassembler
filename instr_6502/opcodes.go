@@ -1,4 +1,4 @@
-package instructions
+package instr6502
 
 import ()
 

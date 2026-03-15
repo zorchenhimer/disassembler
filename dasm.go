@@ -10,11 +10,14 @@ import (
 	"cmp"
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
-	"git.zorchenhimer.com/Zorchenhimer/dasm/instructions"
+	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_6502"
+	//"git.zorchenhimer.com/Zorchenhimer/dasm/instr_sbx"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
 
 var verbose bool
+
+type TryFunc func([]byte) *types.DecodedInstr
 
 func FromConfig(cfg *types.Config) error {
 	inputs := cfg.GetInputs()
@@ -38,6 +41,16 @@ func FromConfig(cfg *types.Config) error {
 
 	lm := NewLabelManager(cfg.Global, cfg.Banks, cfg.Global.Windows)
 	lm.Init()
+
+	var tryFunc TryFunc
+	switch cfg.Global.Architecture {
+	case types.Arch_6502:
+		tryFunc = instr6502.TryOfficial
+	case types.Arch_Full6502:
+		return fmt.Errorf("Full6502 is not implemented yet")
+	case types.Arch_SbxScript:
+		return fmt.Errorf("SBX script is not implemented yet")
+	}
 
 	for _, bank := range cfg.Banks {
 		if bank.NoDasm {
@@ -82,7 +95,7 @@ func FromConfig(cfg *types.Config) error {
 			}
 
 			long_instr := false
-			instr := instructions.TryInstr_6502(raw[offset:])
+			instr := tryFunc(raw[offset:])
 			if instr == nil {
 				long_instr = true
 			} else {
