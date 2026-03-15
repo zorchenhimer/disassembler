@@ -17,8 +17,6 @@ import (
 
 var verbose bool
 
-type TryFunc func([]byte) *types.DecodedInstr
-
 func FromConfig(cfg *types.Config) error {
 	inputs := cfg.GetInputs()
 	raws := make(map[string][]byte)
@@ -42,14 +40,18 @@ func FromConfig(cfg *types.Config) error {
 	lm := NewLabelManager(cfg.Global, cfg.Banks, cfg.Global.Windows)
 	lm.Init()
 
-	var tryFunc TryFunc
+	var decoder types.Decoder
+
 	switch cfg.Global.Architecture {
 	case types.Arch_6502:
-		tryFunc = instr6502.TryOfficial
+		decoder = instr6502.NewDecoder(lm, cfg.Global.AutoVars)
 	case types.Arch_Full6502:
+		//decoder = instr6502.NewDecoderUnofficial(lm)
 		return fmt.Errorf("Full6502 is not implemented yet")
 	case types.Arch_SbxScript:
 		return fmt.Errorf("SBX script is not implemented yet")
+	default:
+		return fmt.Errorf("unknown architecture")
 	}
 
 	for _, bank := range cfg.Banks {
@@ -87,7 +89,6 @@ func FromConfig(cfg *types.Config) error {
 			}
 
 			typ := bank.AddrType(address)
-			var decoded types.AsmLine
 
 			if typ != types.Range_Code {
 				index++
@@ -95,13 +96,13 @@ func FromConfig(cfg *types.Config) error {
 			}
 
 			long_instr := false
-			instr := tryFunc(raw[offset:])
+			instr := decoder.TryInstr(address, raw[offset:])
 			if instr == nil {
 				long_instr = true
 			} else {
 
 				//instr.Instr.OpLength + instr.Instr.ArgLength
-				for i := uint(0); i < uint(instr.Instr.OpLength + instr.Instr.ArgLength); i++ {
+				for i := uint(0); i < instr.Length(); i++ {
 					// instruction runs into defined data
 					if bank.AddrType(address+i) != types.Range_Code {
 						long_instr = true
@@ -111,82 +112,17 @@ func FromConfig(cfg *types.Config) error {
 
 			// is instruction too long that it runs into a data range?
 			if long_instr {
-				dd := &types.DecodedData{
-					Data: []int{int(raw[offset])},
-					IsWords: false,
-					Stride: 8,
-				}
-				bank.Decoded[address] = dd
+				// Default stride is 8.  Grab this default from somewhere?
+				bank.Decoded[address] = decoder.NewData(address, raw[offset:offset+1], 8,
+					types.Display_Hexadecimal, types.Range_Bytes, false)
 				index++
 				continue
 			}
 
-			length := uint(instr.Instr.OpLength + instr.Instr.ArgLength)
-			instr.Address = address //offs + bank.Address-bank.Offset
+			length := instr.Length()
 
-			switch instr.Instr.AddrMode {
-			case types.AddrMode_Accumulator,
-				 types.AddrMode_Implied,
-				 types.AddrMode_Immediate:
-				// nope
-
-			case types.AddrMode_Relative:
-				reladdr := uint(int(address) + instr.Arg + 2)
-				lblRts := ""
-				if reladdr > bank.Address && reladdr < bank.Address + bank.Size -1 && raw[reladdr - bank.Address + bank.Offset] == 0x60 {
-					lblRts = "_rts"
-				}
-				lm.SetLabel(types.NewLabel(reladdr, fmt.Sprintf("L%04X%s", reladdr, lblRts)))
-
-
-			default:
-				var lbl *types.Label
-				doLabel := false
-
-				lblPref := "var_"
-				switch instr.Instr.Name {
-				case "JMP", "JSR", "BEQ", "BNE", "BPL", "BVC", "BVS", "BMI":
-					lblPref = "L"
-					doLabel = true
-				default:
-					if cfg.Global.AutoVars {
-						doLabel = true
-					}
-				}
-
-				if doLabel {
-					lblRts := ""
-					if uint(instr.Arg) > bank.Address && uint(instr.Arg) < bank.Address + bank.Size -1 && raw[uint(instr.Arg) - bank.Address + bank.Offset] == 0x60 {
-						lblRts = "_rts"
-					}
-					lbl = lm.SetLabel(types.NewLabel(uint(instr.Arg), fmt.Sprintf(lblPref+"%04X%s", instr.Arg, lblRts)))
-				}
-
-				if instr.Instr.Name == "JSR" && lbl != nil && lbl.ParamSize > 0 {
-					if length+lbl.ParamSize+index > uint(len(raw)) {
-						return fmt.Errorf("parameter for label %s out of bounds", lbl.Name)
-					}
-
-					dd := &types.DecodedData{
-						Data: []int{},
-						IsWords: false,
-						Stride: 8,
-					}
-
-					for i := uint(0); i < lbl.ParamSize; i++ {
-						// +3 is for the OP + Addr
-						dd.Data = append(dd.Data, int(raw[offset+i+3]))
-						bank.Decoded[address+3+i] = dd
-					}
-
-					length += lbl.ParamSize
-				}
-			}
-
-			decoded = instr
-
-			for i := uint(0); i < uint(instr.Instr.OpLength + instr.Instr.ArgLength); i++ {
-				bank.Decoded[address+i] = decoded
+			for i := uint(0); i < instr.Length(); i++ {
+				bank.Decoded[address+i] = instr
 			}
 
 			index += length
@@ -194,6 +130,23 @@ func FromConfig(cfg *types.Config) error {
 
 		// TODO: Join auto-labels for each byte in word ranges.  (ie, lblA is low
 		//       byte of word and lblB is high byte of word)
+		/*
+
+		Labels [
+			{ address $800D; name "lbl_800D" }
+		]
+
+		; $8000
+			lda L800C+0
+			sta $2006
+			lda lbl_800D
+			sta $2006
+
+		L800C:
+		lbl_800D := * + 1
+			.word $9012
+
+		*/
 
 		// Split ranges
 		for _, rng := range bank.CfgRanges {
@@ -265,30 +218,8 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
-			dd := &types.DecodedData{
-				Data: []int{},
-				Newline: true,
-				Stride: int(rng.Stride),
-				Display: rng.Display,
-				RtsLabel:  rng.RtsLabels,
-			}
-
-			if rng.Type == types.Range_Words || rng.Type == types.Range_Addresses {
-				if rng.Type == types.Range_Words {
-					dd.IsWords = true
-				} else {
-					dd.IsAddrs = true
-				}
-
-				for i := uint(0); i < rng.Size; i+=2 {
-					dd.Data = append(dd.Data, int(raw[offset+i]) | (int(raw[offset+i+1]) << 8))
-				}
-
-			} else {
-				for i := uint(0); i < rng.Size; i++ {
-					dd.Data = append(dd.Data, int(raw[offset+i]))
-				}
-			}
+			dd := decoder.NewData(address, raw[offset:offset+rng.Size], int(rng.Stride),
+						   rng.Display, rng.Type, rng.RtsLabels)
 
 			for i := uint(0); i < rng.Size; i++ {
 				if thing, ok := bank.Decoded[i+address]; ok {

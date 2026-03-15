@@ -32,13 +32,11 @@ func (f *Formatter) Write(address uint, line types.AsmLine, lastNewline bool) er
 
 	// If line as an instruction, find potential intra-instruction labels
 	var b2, b3 *types.Label
-	if _, ok := line.(*types.DecodedInstr); ok {
-		if line.Length() == 2 {
-			b2 = f.lm.GetLabel(address+1)
-		} else if line.Length() == 3 {
-			b2 = f.lm.GetLabel(address+1)
-			b3 = f.lm.GetLabel(address+2)
-		}
+	if line.Length() == 2 {
+		b2 = f.lm.GetLabel(address+1)
+	} else if line.Length() == 3 {
+		b2 = f.lm.GetLabel(address+1)
+		b3 = f.lm.GetLabel(address+2)
 	}
 
 	for lnum := 0; lnum < line.LineCount(); lnum++ {
