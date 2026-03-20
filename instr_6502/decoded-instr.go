@@ -7,6 +7,12 @@ import (
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
 
+type AsmLine struct {
+	Instr string
+	InlineComment string
+	FullComment string
+}
+
 type DecodedInstr struct {
 	Address uint
 	Opcode byte
@@ -17,9 +23,15 @@ type DecodedInstr struct {
 	Parameters []byte
 
 	Instr  *Instruction
+
+	lines []string
 }
 
 func (di *DecodedInstr) InsertNewlineAfter() bool {
+	if len(di.Parameters) > 0 {
+		return true
+	}
+
 	switch di.Instr.Name() {
 	case "RTS", "JMP":
 		return true
@@ -39,11 +51,86 @@ func (di *DecodedInstr) Length() uint {
 	return uint(len(di.Args)+len(di.Parameters)+1)
 }
 
-func (di *DecodedInstr) Asm(line int, lm types.LabelManager) (uint, string) {
-	if line > 0 {
-		return 0, ""
+func (di *DecodedInstr) render(lm types.LabelManager) {
+	if len(di.lines) > 0 {
+		return
 	}
-	return 0, di.Op() + " " + di.ArgStr(lm)
+
+	buf := &strings.Builder{}
+	oplen := di.Instr.Length()
+	for i := uint(1); i < 3; i++ {
+		if oplen > 1 {
+			if lbl := lm.GetLabel(di.Address+i); lbl != nil {
+				fmt.Fprintf(buf, "%s := * + %d", lbl.Name, i)
+			}
+		}
+	}
+
+	buf.WriteString(di.Op())
+	argstr := di.ArgStr(lm)
+	if argstr != "" {
+		buf.WriteString(" ")
+		buf.WriteString(argstr)
+	}
+	buf.WriteString("\n")
+
+	if len(di.Parameters) > 0 {
+		// TODO: inner labels
+		params := []string{}
+		for _, p := range di.Parameters {
+			params = append(params, fmt.Sprintf("$%02X", p))
+		}
+		buf.WriteString(".byte "+ strings.Join(params, ", ")+"\n")
+	}
+
+	di.lines = strings.Split(buf.String(), "\n")
+}
+
+func (di *DecodedInstr) Asm(line int, lm types.LabelManager) (uint, string) {
+	//di.render(lm)
+
+	//offs := uint(0)
+	//if line > 1 && len(di.Parameters) > 0 {
+	//	offs = 3
+	//}
+	//if line >= len(di.lines) {
+	//	return 0, ""
+	//}
+	//return offs, di.lines[line]
+
+	switch line {
+	case 0:
+		//oplen := di.Instr.Length()
+		//var b1, b2 *types.Label
+		//if oplen > 1 { b1 = lm.GetLabel(di.Address+1) }
+		//if oplen > 2 { b2 = lm.GetLabel(di.Address+2) }
+
+		//var innerLabels string
+		//if b1 != nil && b1.Name != "" {
+		//	innerLabels = b1.Name+" := * + 1\n"
+		//}
+		//if b2 != nil && b1 != b2 && b2.Name != "" {
+		//	innerLabels += b2.Name+" := * + 2\n"
+		//}
+
+		argstr := di.ArgStr(lm)
+		if argstr != "" {
+			return 0, di.Op() + " " + argstr
+		}
+		return 0, di.Op()
+	case 1:
+		if len(di.Parameters) == 0 {
+			return 0, ""
+		}
+
+		inline := []string{}
+		for _, b := range di.Parameters {
+			inline = append(inline, fmt.Sprintf("$%02X", b))
+		}
+		return 3, ".byte "+strings.Join(inline, ", ")
+	}
+
+	return 0, ""
 }
 
 func (di *DecodedInstr) Op() string {
@@ -120,15 +207,28 @@ func (di DecodedInstr) Raw() []byte {
 }
 
 func (di *DecodedInstr) RawStr(ln int) string {
-	if ln > 0 {
+	switch ln {
+	case 0:
+		raw := di.Raw()
+		rawstr := []string{}
+		for _, r := range raw {
+			rawstr = append(rawstr, fmt.Sprintf("%02X", r))
+		}
+		return fmt.Sprintf("%s", strings.Join(rawstr, " "))
+
+	case 1:
+		if len(di.Parameters) == 0 {
+			return ""
+		}
+
+		inline := []string{}
+		for _, b := range di.Parameters {
+			inline = append(inline, fmt.Sprintf("%02X", b))
+		}
+		return strings.Join(inline, " ")
+
+	default:
 		return ""
 	}
-
-	raw := di.Raw()
-	rawstr := []string{}
-	for _, r := range raw {
-		rawstr = append(rawstr, fmt.Sprintf("%02X", r))
-	}
-	return fmt.Sprintf("%s", strings.Join(rawstr, " "))
 }
 

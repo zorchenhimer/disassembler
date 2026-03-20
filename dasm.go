@@ -119,13 +119,11 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
-			length := instr.Length()
-
 			for i := uint(0); i < instr.Length(); i++ {
 				bank.Decoded[address+i] = instr
 			}
 
-			index += length
+			index += instr.Length()
 		}
 
 		// TODO: Join auto-labels for each byte in word ranges.  (ie, lblA is low

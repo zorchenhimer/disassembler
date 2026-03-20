@@ -122,7 +122,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 			lbl = dec.lm.SetLabel(types.NewLabel(uint(arg), fmt.Sprintf(lblPref+"%04X", arg)))
 		}
 
-		if instr.Name() == "JSR" && lbl != nil && lbl.ParamSize > 0 {
+		if (instr.Name() == "JSR" || instr.Name() == "JMP") && lbl != nil && lbl.ParamSize > 0 {
 			//if length+lbl.ParamSize+index > uint(len(raw)) {
 			//	return fmt.Errorf("parameter for label %s out of bounds", lbl.Name)
 			//}
