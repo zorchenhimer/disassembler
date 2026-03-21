@@ -24,6 +24,9 @@ func (dd *DecodedData) ParamSize() uint {
 	return 0
 }
 
+func (dd *DecodedData) Prep(lm types.LabelManager) {
+}
+
 //func NewDecodedData(addr uint, raw []byte, isWords bool, stride int, display types.RangeDisplay, rtsLabels bool) types.AsmLine {
 //	dd := &DecodedData{
 //		Data: []int{},
@@ -137,7 +140,7 @@ func (dd *DecodedData) ArgStr(lm types.LabelManager, offset int) string {
 	return strings.Join(vals, ", ")
 }
 
-func (dd *DecodedData) Asm(line int, lm types.LabelManager) (uint, string) {
+func (dd *DecodedData) Asm(line int, lm types.LabelManager) (uint, string, string) {
 	// value offset
 	offs := line * dd.Stride
 	argstr := dd.ArgStr(lm, offs)
@@ -147,7 +150,7 @@ func (dd *DecodedData) Asm(line int, lm types.LabelManager) (uint, string) {
 		offs *= 2
 	}
 
-	return uint(offs), dd.Op() + " " + argstr
+	return uint(offs), dd.Op() + " " + argstr, ""
 }
 
 func (dd *DecodedData) RawStr(ln int) string {

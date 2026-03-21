@@ -12,6 +12,7 @@ import (
 type Formatter struct {
 	Indent int
 	AsmWidth int
+	CommentWidth int
 
 	CommentLevel types.CommentLevel
 
@@ -28,6 +29,8 @@ func NewFormatter(w io.Writer, lm types.LabelManager) *Formatter {
 
 func (f *Formatter) Write(address uint, line types.AsmLine) error {
 	//var err error
+
+	line.Prep(f.lm)
 
 	// TODO: move these offset labels into line.Asm().  Print a warning
 	//       if they have comments block comments; print inline comments.
@@ -95,7 +98,12 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 	}
 
 	for lnum := 0; lnum < line.LineCount(); lnum++ {
-		offs, asm := line.Asm(lnum, f.lm)
+		offs, asm, comment := line.Asm(lnum, f.lm)
+		if f.CommentLevel == types.Comment_None {
+			comment = ""
+		} else if comment != "" {
+			comment = "; "+comment
+		}
 		var rawstr, fullcom string
 
 		if f.CommentLevel == types.Comment_Full && (lnum == 0 || offs > 0) {
@@ -105,17 +113,20 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 			}
 			fullcom = fmt.Sprintf("; %04X%s", address+offs, rawstr)
 
-			fmt.Fprintf(f.w, "%*s%-*s%s\n",
+			fmt.Fprintf(f.w, "%*s%-*s%-*s%s\n",
 				f.Indent, "",
 				f.AsmWidth, asm,
+				f.CommentWidth, comment,
 				fullcom,
 			)
 		} else {
-			if asm == "" {
+			if asm == "" && comment == "" {
 				fmt.Fprintln(f.w, "")
 			} else {
-				fmt.Fprintf(f.w, "%*s%s\n",
-					f.Indent, "", asm,
+				fmt.Fprintf(f.w, "%*s%-*s%s\n",
+					f.Indent, "",
+					f.AsmWidth, asm,
+					comment,
 				)
 			}
 		}

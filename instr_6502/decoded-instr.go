@@ -19,13 +19,13 @@ type DecodedInstr struct {
 	Args   []byte
 	Arg    int
 
-	// inline parameters to a JSR
-	Parameters []byte
+	// inline parameters to a JSR/JMP
 	paramSize uint
 
 	Instr  *Instruction
 
 	lines []string
+	comment []string
 }
 
 func (di *DecodedInstr) ParamSize() uint {
@@ -47,8 +47,8 @@ func (di *DecodedInstr) InsertNewlineAfter() bool {
 }
 
 func (di *DecodedInstr) LineCount() int {
-	if len(di.Parameters) != 0 {
-		return 2
+	if len(di.comment) > 1 {
+		return len(di.comment)
 	}
 	return 1
 }
@@ -57,86 +57,27 @@ func (di *DecodedInstr) Length() uint {
 	return uint(len(di.Args)+1)
 }
 
-func (di *DecodedInstr) render(lm types.LabelManager) {
-	if len(di.lines) > 0 {
-		return
+func (di *DecodedInstr) Prep(lm types.LabelManager) {
+	if lbl := lm.GetLabel(di.Address); lbl != nil && lbl.CommentInline != "" {
+		di.comment = strings.Split(lbl.CommentInline, "\n")
 	}
-
-	buf := &strings.Builder{}
-	oplen := di.Instr.Length()
-	for i := uint(1); i < 3; i++ {
-		if oplen > 1 {
-			if lbl := lm.GetLabel(di.Address+i); lbl != nil {
-				fmt.Fprintf(buf, "%s := * + %d", lbl.Name, i)
-			}
-		}
-	}
-
-	buf.WriteString(di.Op())
-	argstr := di.ArgStr(lm)
-	if argstr != "" {
-		buf.WriteString(" ")
-		buf.WriteString(argstr)
-	}
-	buf.WriteString("\n")
-
-	if len(di.Parameters) > 0 {
-		// TODO: inner labels
-		params := []string{}
-		for _, p := range di.Parameters {
-			params = append(params, fmt.Sprintf("$%02X", p))
-		}
-		buf.WriteString(".byte "+ strings.Join(params, ", ")+"\n")
-	}
-
-	di.lines = strings.Split(buf.String(), "\n")
 }
 
-func (di *DecodedInstr) Asm(line int, lm types.LabelManager) (uint, string) {
-	//di.render(lm)
-
-	//offs := uint(0)
-	//if line > 1 && len(di.Parameters) > 0 {
-	//	offs = 3
-	//}
-	//if line >= len(di.lines) {
-	//	return 0, ""
-	//}
-	//return offs, di.lines[line]
-
-	switch line {
-	case 0:
-		//oplen := di.Instr.Length()
-		//var b1, b2 *types.Label
-		//if oplen > 1 { b1 = lm.GetLabel(di.Address+1) }
-		//if oplen > 2 { b2 = lm.GetLabel(di.Address+2) }
-
-		//var innerLabels string
-		//if b1 != nil && b1.Name != "" {
-		//	innerLabels = b1.Name+" := * + 1\n"
-		//}
-		//if b2 != nil && b1 != b2 && b2.Name != "" {
-		//	innerLabels += b2.Name+" := * + 2\n"
-		//}
-
-		argstr := di.ArgStr(lm)
-		if argstr != "" {
-			return 0, di.Op() + " " + argstr
-		}
-		return 0, di.Op()
-	case 1:
-		if len(di.Parameters) == 0 {
-			return 0, ""
-		}
-
-		inline := []string{}
-		for _, b := range di.Parameters {
-			inline = append(inline, fmt.Sprintf("$%02X", b))
-		}
-		return 3, ".byte "+strings.Join(inline, ", ")
+func (di *DecodedInstr) Asm(line int, lm types.LabelManager) (uint, string, string) {
+	var comment string
+	if line < len(di.comment) {
+		comment = di.comment[line]
 	}
 
-	return 0, ""
+	if line == 0 {
+		argstr := di.ArgStr(lm)
+		if argstr != "" {
+			return 0, di.Op() + " " + argstr, comment
+		}
+		return 0, di.Op(), comment
+	}
+
+	return 0, "", comment
 }
 
 func (di *DecodedInstr) Op() string {
@@ -197,7 +138,6 @@ func (di *DecodedInstr) ArgStr(labels types.LabelManager) string {
 
 	} else {
 		if di.Instr.addrMode == AddrMode_Relative {
-			// TODO: autolabel or something
 			argstr = strings.Replace(argstr, "{{arg}}", fmt.Sprintf("%d", di.Arg), 1)
 		} else if di.Instr.argLength == 1 {
 			argstr = strings.Replace(argstr, "{{arg}}", fmt.Sprintf("$%02X", di.Arg), 1)
@@ -213,28 +153,15 @@ func (di DecodedInstr) Raw() []byte {
 }
 
 func (di *DecodedInstr) RawStr(ln int) string {
-	switch ln {
-	case 0:
-		raw := di.Raw()
-		rawstr := []string{}
-		for _, r := range raw {
-			rawstr = append(rawstr, fmt.Sprintf("%02X", r))
-		}
-		return fmt.Sprintf("%s", strings.Join(rawstr, " "))
-
-	case 1:
-		if len(di.Parameters) == 0 {
-			return ""
-		}
-
-		inline := []string{}
-		for _, b := range di.Parameters {
-			inline = append(inline, fmt.Sprintf("%02X", b))
-		}
-		return strings.Join(inline, " ")
-
-	default:
+	if ln > 0 {
 		return ""
 	}
+
+	raw := di.Raw()
+	rawstr := []string{}
+	for _, r := range raw {
+		rawstr = append(rawstr, fmt.Sprintf("%02X", r))
+	}
+	return fmt.Sprintf("%s", strings.Join(rawstr, " "))
 }
 

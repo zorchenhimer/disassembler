@@ -328,6 +328,7 @@ func FromConfig(cfg *types.Config) error {
 		formatter.Indent = cfg.Global.InstrIndent
 		formatter.AsmWidth = cfg.Global.AsmWidth
 		formatter.CommentLevel = cfg.Global.Comments
+		formatter.CommentWidth = cfg.Global.CommentWidth
 
 		for addr := bank.Address; addr < bank.Address + bank.Size; {
 			for _, win := range bank.Windows[addr] {

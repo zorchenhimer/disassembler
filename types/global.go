@@ -13,10 +13,10 @@ type ConfigGlobal struct {
 	Comments     CommentLevel
 	Architecture ArchitectureType
 
-	//CommentColumn int
-	InstrIndent int
-	AsmWidth    int
-	AutoVars    bool
+	InstrIndent  int
+	AsmWidth     int
+	CommentWidth int
+	AutoVars     bool
 
 	Windows []*WindowDef
 	Labels  []*Label

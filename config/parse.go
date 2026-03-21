@@ -206,7 +206,7 @@ func (p *parser) parseGlobal() error {
 			}
 			p.config.Global.Labels = vals
 
-		case "instrindent", "indent", "asmwidth":
+		case "instrindent", "indent", "asmwidth", "commentwidth":
 			itm = p.next()
 			if itm.typ != lex_Number {
 				return parseError(itm, "%s requires lex_Number", prev.val)
@@ -222,6 +222,8 @@ func (p *parser) parseGlobal() error {
 				p.config.Global.InstrIndent = num
 			case "asmwidth":
 				p.config.Global.AsmWidth = num
+			case "commentwidth":
+				p.config.Global.CommentWidth = num
 			}
 
 		case "autovars":
