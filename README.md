@@ -13,7 +13,7 @@ treated as code.
 
 This project uses a custom configuration format that's based around blocks of
 options.  The two block types are `Global` and `Bank`.  Only one Global block
-is allowed, and Bank blocks are be repeated for as many banks the rom has.
+is allowed, and Bank blocks can be repeated for as many banks the rom has.
 
 Each block starts with the type name and contains directives wrapped in curly
 braces.  Some directives expect a list of further blocks that are wrapped in
@@ -33,7 +33,7 @@ square braces.  For example:
         ]
     }
 
-Comments are start with a double forward slash and continue to the end of the
+Comments start with a double forward slash and continue to the end of the
 current line.  There are no multi-line comments.
 
 Hexadecimal numbers are specified with a preceding `0x` or `$`.
@@ -55,7 +55,7 @@ All identifiers and non-string options are case-insensitive.
 | `Comments`     | ident  | Options are `None`, `Standard`, and `Full`.  `None` omits all comments, `Standard` outputs defined comments, & `Full` outputs defined comments as well as address and raw byte data for each instruction. |
 | `Include`      | string | Additional configuration files to include.  Included files can only contain `Bank` blocks. |
 | `Input`        | string | Default input file. |
-| `Labels`       | list   | List of labels in the global space (eg, zero page & main system RAM. |
+| `Labels`       | list   | List of labels in the global space (eg, zero page & main system RAM.) |
 | `MlbOutput`    | string | Output file to write Mesen labels. |
 | `Output`       | string | File to write the global label definitions. |
 | `VerboseColumn`| int    | Column to start the verbose comments (address and raw bytes).  Default is `40`. |
@@ -71,10 +71,10 @@ Same as Bank labels.
 This list defines windows.  If the ROM doesn't use a mapper, this list can be
 omitted.
 
-Each window listed here defines an range of memory that can be swapped out with
-another portion of ROM or RAM.  When more than one window is visible at a time
-(ie, not overlapping), references from one bank to another will generate labels
-across banks and will use existing labels from the other bank if applicable.
+Each window listed here defines a range of memory that a `Bank` occupies.  When
+more than one window is visible at a time (ie, not overlapping), references
+from one bank to another will generate labels across banks and will use
+existing labels from the other bank if applicable.
 
 | Option  | Type   | Description |
 |:--------|:------:|:------------|
@@ -129,6 +129,8 @@ type of a defined range is `Bytes`.
 
 A Range of type `Addresses` will resolve all values to labels and create
 auto-labels if needed.  Type `words` does not resolve labels.
+
+Either `End` or `Start` is required, but not both.
 
 | Option          | Type   | Description |
 |:----------------|:------:|:------------|
