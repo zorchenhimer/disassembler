@@ -49,7 +49,6 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		return nil
 	}
 
-
 	var arg int
 	var args []byte
 
@@ -80,7 +79,8 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		arg = int(u16)
 	}
 
-	var params []byte
+	//var params []byte
+	var paramSize uint
 
 	switch instr.addrMode {
 	case AddrMode_Accumulator,
@@ -140,7 +140,8 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 			//	bank.Decoded[address+3+i] = dd
 			//}
 
-			params = raw[3:3+lbl.ParamSize]
+			//params = raw[3:3+lbl.ParamSize]
+			paramSize = lbl.ParamSize
 		}
 	}
 
@@ -150,7 +151,8 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		Arg:        arg,
 		Instr:      instr,
 		Address:    addr,
-		Parameters: params,
+		//Parameters: params,
+		paramSize:  paramSize,
 	}
 }
 

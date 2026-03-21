@@ -21,15 +21,21 @@ type DecodedInstr struct {
 
 	// inline parameters to a JSR
 	Parameters []byte
+	paramSize uint
 
 	Instr  *Instruction
 
 	lines []string
 }
 
+func (di *DecodedInstr) ParamSize() uint {
+	return di.paramSize
+}
+
 func (di *DecodedInstr) InsertNewlineAfter() bool {
-	if len(di.Parameters) > 0 {
-		return true
+	//if len(di.Parameters) > 0 {
+	if di.paramSize > 0 {
+		return false
 	}
 
 	switch di.Instr.Name() {
@@ -48,7 +54,7 @@ func (di *DecodedInstr) LineCount() int {
 }
 
 func (di *DecodedInstr) Length() uint {
-	return uint(len(di.Args)+len(di.Parameters)+1)
+	return uint(len(di.Args)+1)
 }
 
 func (di *DecodedInstr) render(lm types.LabelManager) {

@@ -8,7 +8,8 @@ type AsmLine interface {
 	Asm(line int, lm LabelManager) (uint, string)
 	RawStr(line int) string
 	LineCount() int
-	Length() uint // byte length of op code + args + parameters
+	Length() uint // byte length of op code + args
+	ParamSize() uint
 
 	InsertNewlineAfter() bool
 }

@@ -73,6 +73,7 @@ func FromConfig(cfg *types.Config) error {
 			bank.Size = uint(len(raw[bank.Offset:]))
 		}
 
+		// instruction decoding
 		lm.Init()
 		for index := uint(0); index < bank.Size ; {
 			// index into raw
@@ -117,6 +118,18 @@ func FromConfig(cfg *types.Config) error {
 					types.Display_Hexadecimal, types.Range_Bytes, false)
 				index++
 				continue
+			} else if instr.ParamSize() > 0 {
+				rng := &types.Range{
+					Address: address+instr.Length(),
+					Size: instr.ParamSize(),
+					End: address+instr.Length()+instr.ParamSize(),
+					Stride: 8,
+					Type: types.Range_Bytes,
+					Display: types.Display_Hexadecimal,
+				}
+				for i := uint(0); i < instr.ParamSize(); i++ {
+					bank.Ranges[i+rng.Address] = rng
+				}
 			}
 
 			for i := uint(0); i < instr.Length(); i++ {
@@ -316,7 +329,6 @@ func FromConfig(cfg *types.Config) error {
 		formatter.AsmWidth = cfg.Global.AsmWidth
 		formatter.CommentLevel = cfg.Global.Comments
 
-		lastNewline := false
 		for addr := bank.Address; addr < bank.Address + bank.Size; {
 			for _, win := range bank.Windows[addr] {
 				lm.SetWindow(win.Window, win.Bank)
@@ -328,8 +340,7 @@ func FromConfig(cfg *types.Config) error {
 					bank.Name, bank.Address, addr, bank.Address + bank.Size))
 			}
 
-			formatter.Write(addr, dec, lastNewline)
-			lastNewline = dec.InsertNewlineAfter()
+			formatter.Write(addr, dec)
 			addr += dec.Length()
 		}
 
