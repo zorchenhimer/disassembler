@@ -18,8 +18,9 @@ func newParser(items chan lexItem) *parser {
 	return &parser{
 		config: &types.Config{
 			Global: types.ConfigGlobal{
-				InstrIndent: -1,
-				AsmWidth: -1,
+				AsmColumn: -1,
+				CommentColumn: -1,
+				VerboseColumn: -1,
 			},
 		},
 		items: items,
@@ -206,7 +207,7 @@ func (p *parser) parseGlobal() error {
 			}
 			p.config.Global.Labels = vals
 
-		case "instrindent", "indent", "asmwidth", "commentwidth":
+		case "asmcolumn", "asmcol", "commentcolumn", "commentcol", "verbosecolumn", "verbosecol":
 			itm = p.next()
 			if itm.typ != lex_Number {
 				return parseError(itm, "%s requires lex_Number", prev.val)
@@ -218,12 +219,12 @@ func (p *parser) parseGlobal() error {
 			}
 
 			switch strings.ToLower(prev.val) {
-			case "instrindent", "indent":
-				p.config.Global.InstrIndent = num
-			case "asmwidth":
-				p.config.Global.AsmWidth = num
-			case "commentwidth":
-				p.config.Global.CommentWidth = num
+			case "asmcolumn", "asmcol":
+				p.config.Global.AsmColumn = num
+			case "commentcolumn", "commentcol":
+				p.config.Global.CommentColumn = num
+			case "verbosecolumn", "verbosecol":
+				p.config.Global.VerboseColumn = num
 			}
 
 		case "autovars":

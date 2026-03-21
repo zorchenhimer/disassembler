@@ -324,11 +324,10 @@ func FromConfig(cfg *types.Config) error {
 		}
 
 		formatter := NewFormatter(output, lm)
-		// TODO: put these in the config
-		formatter.Indent = cfg.Global.InstrIndent
-		formatter.AsmWidth = cfg.Global.AsmWidth
 		formatter.CommentLevel = cfg.Global.Comments
-		formatter.CommentWidth = cfg.Global.CommentWidth
+		formatter.AsmCol = cfg.Global.AsmColumn
+		formatter.CommentCol = cfg.Global.CommentColumn
+		formatter.FullCol = cfg.Global.VerboseColumn
 
 		for addr := bank.Address; addr < bank.Address + bank.Size; {
 			for _, win := range bank.Windows[addr] {

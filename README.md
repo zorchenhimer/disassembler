@@ -47,15 +47,19 @@ All identifiers and non-string options are case-insensitive.
 | Option         | Type   | Description |
 |:---------------|:------:|:------------|
 | `Architecture` | ident  | Options are `6502`, `Full6502`, and `SBX`.  Only `6502` is currently implemented. |
-| `AsmWidth`     | int    | Width of the assembly line before the `Full` comment data is printed. Defaults to `30`. |
+| `AsmColumn`    | int    | Column to start the instruction printout.  Default is `4`. |
+| `AsmCol`       | int    | Alias of `AsmColumn` |
 | `AutoVars`     | bool   | Automatically assign names to variables used in `LDA`, `STA`, etc. Destinations of branches, `JMP`, and `JSR` will always auto-generate labels. |
+| `CommentColumn`| int    | Column to start the inline comments.  Default is `20`. |
+| `CommentCol`   | int    | Alias of `CommentColumn` |
 | `Comments`     | ident  | Options are `None`, `Standard`, and `Full`.  `None` omits all comments, `Standard` outputs defined comments, & `Full` outputs defined comments as well as address and raw byte data for each instruction. |
 | `Include`      | string | Additional configuration files to include.  Included files can only contain `Bank` blocks. |
 | `Input`        | string | Default input file. |
-| `InstrIndent`  | int    | Indent size for instructions.  Defaults to `4`. |
 | `Labels`       | list   | List of labels in the global space (eg, zero page & main system RAM. |
 | `MlbOutput`    | string | Output file to write Mesen labels. |
 | `Output`       | string | File to write the global label definitions. |
+| `VerboseColumn`| int    | Column to start the verbose comments (address and raw bytes).  Default is `40`. |
+| `VerboseCol`   | int    | Alias of `VerboseColumn` |
 | `Windows`      | list   | List of window definitions. |
 
 #### Labels

@@ -10,9 +10,9 @@ import (
 )
 
 type Formatter struct {
-	Indent int
-	AsmWidth int
-	CommentWidth int
+	AsmCol     int
+	CommentCol int
+	FullCol    int
 
 	CommentLevel types.CommentLevel
 
@@ -112,24 +112,29 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 				rawstr = " "+rawstr
 			}
 			fullcom = fmt.Sprintf("; %04X%s", address+offs, rawstr)
-
-			fmt.Fprintf(f.w, "%*s%-*s%-*s%s\n",
-				f.Indent, "",
-				f.AsmWidth, asm,
-				f.CommentWidth, comment,
-				fullcom,
-			)
-		} else {
-			if asm == "" && comment == "" {
-				fmt.Fprintln(f.w, "")
-			} else {
-				fmt.Fprintf(f.w, "%*s%-*s%s\n",
-					f.Indent, "",
-					f.AsmWidth, asm,
-					comment,
-				)
-			}
 		}
+
+		// Align the asm, comments, and verbose comments to
+		// the configured columns.
+		ln := ""
+		if asm != "" {
+			ln = strings.Repeat(" ", f.AsmCol) + asm
+		}
+
+		if comment != "" {
+			if len(ln) < f.CommentCol {
+				ln += strings.Repeat(" ", f.CommentCol-len(ln))
+			}
+			ln += comment
+		}
+
+		if fullcom != "" {
+			if len(ln) < f.FullCol {
+				ln += strings.Repeat(" ", f.FullCol-len(ln))
+			}
+			ln += fullcom
+		}
+		fmt.Fprintln(f.w, ln)
 	}
 
 	f.lastNewline = line.InsertNewlineAfter() || f.param

@@ -13,9 +13,9 @@ type ConfigGlobal struct {
 	Comments     CommentLevel
 	Architecture ArchitectureType
 
-	InstrIndent  int
-	AsmWidth     int
-	CommentWidth int
+	AsmColumn     int
+	CommentColumn int
+	VerboseColumn int
 	AutoVars     bool
 
 	Windows []*WindowDef
@@ -46,13 +46,17 @@ func (g *ConfigGlobal) verify() error {
 	//	}
 	//}
 
-	// both of these init to -1 in config/parse.go
-	if g.InstrIndent < 0 {
-		g.InstrIndent = 4
+	// these init to -1 in config/parse.go
+	if g.AsmColumn < 0 {
+		g.AsmColumn = 4
 	}
 
-	if g.AsmWidth < 0 {
-		g.AsmWidth = 30
+	if g.CommentColumn < 0 {
+		g.CommentColumn = 20
+	}
+
+	if g.VerboseColumn < 0 {
+		g.VerboseColumn = 40
 	}
 
 	return nil
