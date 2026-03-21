@@ -10,8 +10,6 @@ import (
 type DecodedData struct {
 	Data     []int
 	Stride   int
-	IsWords  bool
-	IsAddrs  bool
 	Newline  bool
 	RtsLabel bool
 	Address  uint
@@ -26,33 +24,6 @@ func (dd *DecodedData) ParamSize() uint {
 
 func (dd *DecodedData) Prep(lm types.LabelManager) {
 }
-
-//func NewDecodedData(addr uint, raw []byte, isWords bool, stride int, display types.RangeDisplay, rtsLabels bool) types.AsmLine {
-//	dd := &DecodedData{
-//		Data: []int{},
-//		IsWords: isWords,
-//		Stride: stride,
-//		Display: display,
-//		RtsLabel: rtsLabels,
-//		Address: addr,
-//	}
-//
-//	if isWords && len(raw) % 2 != 0 {
-//		dd.IsWords = false
-//	}
-//
-//	if dd.IsWords {
-//		for i := 0; i < len(raw); i += 2 {
-//			dd.Data = append(dd.Data, int(raw[i]) | (int(raw[i+1]) << 8))
-//		}
-//	} else {
-//		for i := 0; i < len(raw); i++ {
-//			dd.Data = append(dd.Data, int(raw[i]))
-//		}
-//	}
-//
-//	return dd
-//}
 
 func (dd *DecodedData) InsertNewlineAfter() bool {
 	return dd.Newline
@@ -69,24 +40,25 @@ func (dd *DecodedData) LineCount() int {
 	}
 
 	return count
-	//return 1
 }
 
 func (dd *DecodedData) Length() uint {
 	l := uint(len(dd.Data))
-	if dd.IsWords || dd.IsAddrs {
+	if dd.Type == types.Range_Words || dd.Type == types.Range_Addresses {
 		return l*2
 	}
 	return l
 }
 
 func (dd *DecodedData) Op() string {
-	if dd.IsWords {
+	switch dd.Type {
+	case types.Range_Words:
 		return ".word"
-	} else if dd.IsAddrs {
+	case types.Range_Addresses:
 		return ".addr"
+	default:
+		return ".byte"
 	}
-	return ".byte"
 }
 
 func (dd *DecodedData) ArgStr(lm types.LabelManager, offset int) string {
@@ -94,7 +66,7 @@ func (dd *DecodedData) ArgStr(lm types.LabelManager, offset int) string {
 	for i := offset; i < len(dd.Data) && i < offset + dd.Stride; i++ {
 		dat := uint(dd.Data[i])
 
-		if dd.IsAddrs {
+		if dd.Type == types.Range_Addresses {
 			var lbl *types.Label
 			if dd.RtsLabel {
 				// RTS Trick labels (one byte before the desired destination)
@@ -127,7 +99,7 @@ func (dd *DecodedData) ArgStr(lm types.LabelManager, offset int) string {
 				intFmt = "%d"
 
 			default: // types.Display_Hexadecimal
-				if dd.IsWords {
+				if dd.Type == types.Range_Words {
 					intFmt = "$%04X"
 				} else {
 					intFmt = "$%02X"
@@ -146,7 +118,7 @@ func (dd *DecodedData) Asm(line int, lm types.LabelManager) (uint, string, strin
 	argstr := dd.ArgStr(lm, offs)
 
 	// byte offset
-	if dd.IsWords || dd.IsAddrs {
+	if dd.Type == types.Range_Words || dd.Type == types.Range_Addresses {
 		offs *= 2
 	}
 
@@ -154,7 +126,7 @@ func (dd *DecodedData) Asm(line int, lm types.LabelManager) (uint, string, strin
 }
 
 func (dd *DecodedData) RawStr(ln int) string {
-	if dd.IsAddrs {
+	if dd.Type == types.Range_Addresses {
 		start := dd.Stride * ln
 		end := start + dd.Stride
 

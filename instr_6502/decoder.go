@@ -166,11 +166,6 @@ func (dec *decoder) NewData(addr uint, raw []byte, stride int, display types.Ran
 		Type: rngType,
 	}
 
-	switch dd.Type {
-	case types.Range_Words:
-		dd.IsWords = true
-	}
-
 	if (dd.Type == types.Range_Words || dd.Type == types.Range_Addresses) && len(raw) % 2 != 0 {
 		dd.Type = types.Range_Bytes
 		fmt.Printf("WARNING: [$%04X] odd number of bytes for words\n", addr)
