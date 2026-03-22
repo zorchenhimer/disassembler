@@ -1,13 +1,13 @@
 package dasm
 
 import (
+	"bytes"
+	"cmp"
 	"fmt"
 	"os"
-	//"path/filepath"
-	//"strconv"
-	"strings"
+	"path/filepath"
 	"slices"
-	"cmp"
+	"strings"
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_6502"
@@ -34,6 +34,13 @@ func FromConfig(cfg *types.Config) error {
 		if err != nil {
 			return fmt.Errorf("Error reading input %q: %s", cfg.Global.Input, err)
 		}
+
+		// Skip the NES header, if it exists.  This results in all of the
+		// offsets in the configs ignoring the header.
+		if len(raw) > 0x10 && bytes.Equal([]byte("NES\x1A"), raw[:4]) {
+			raw = raw[16:]
+		}
+
 		raws[filename] = raw
 	}
 
@@ -75,6 +82,7 @@ func FromConfig(cfg *types.Config) error {
 
 		// instruction decoding
 		lm.Init()
+		lm.ActivateBank(bank.Name, bank.Address)
 		for index := uint(0); index < bank.Size ; {
 			// index into raw
 			offset  := index + bank.Offset
@@ -248,6 +256,11 @@ func FromConfig(cfg *types.Config) error {
 	verbose = false
 
 	if cfg.Global.Output != "" {
+		err := os.MkdirAll(filepath.Dir(cfg.Global.Output), 0777)
+		if err != nil {
+			return err
+		}
+
 		output, err := os.Create(cfg.Global.Output)
 		if err != nil {
 			return err
@@ -289,6 +302,11 @@ func FromConfig(cfg *types.Config) error {
 				fmt.Printf("Warning: Not writing disassembly for bank %q anywhere!\n", bank.Name)
 			}
 			continue
+		}
+
+		err := os.MkdirAll(filepath.Dir(bank.Output), 0777)
+		if err != nil {
+			return err
 		}
 
 		output, err := os.Create(bank.Output)
@@ -348,6 +366,11 @@ func FromConfig(cfg *types.Config) error {
 	}
 
 	if cfg.Global.MlbOutput != "" {
+		err := os.MkdirAll(filepath.Dir(cfg.Global.MlbOutput), 0777)
+		if err != nil {
+			return err
+		}
+
 		mlb, err := os.Create(cfg.Global.MlbOutput)
 		if err != nil {
 			return err

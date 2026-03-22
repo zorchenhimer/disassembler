@@ -11,6 +11,10 @@ type LabelManager interface {
 	GetRange(addr uint) *Range
 
 	SetWindow(winName, bankName string)
+
+	// Set the bank that is currently being disassembled.  This should
+	// find the window at the address and set the bank in that window.
+	ActivateBank(name string, address uint)
 }
 
 type Label struct {

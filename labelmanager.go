@@ -1,6 +1,8 @@
 package dasm
 
 import (
+	"fmt"
+
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
 
@@ -56,6 +58,16 @@ func (lm *LabelManager) Init() {
 			lm.WindowAddrs[i] = win.Name
 		}
 	}
+}
+
+func (lm *LabelManager) ActivateBank(name string, address uint) {
+	for _, def := range lm.defs {
+		if def.Start == address {
+			lm.SetWindow(def.Name, name)
+			return
+		}
+	}
+	fmt.Printf("Warning: Unable to activate bank %s at address %04X\n", name, address)
 }
 
 func (lm *LabelManager) SetWindow(winName, bankName string) {
