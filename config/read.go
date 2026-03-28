@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
@@ -45,7 +46,20 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 	//	return nil, fmt.Errorf("Nested includes not allowed")
 	//}
 
-	for _, file := range cfg.Global.Include {
+	included := []string{}
+	for _, item := range cfg.Global.Include {
+		if strings.HasSuffix(item, string(os.PathSeparator)) {
+			item += "*.cfg"
+		}
+
+		files, err := filepath.Glob(item)
+		if err != nil {
+			return nil, err
+		}
+		included = append(included, files...)
+	}
+
+	for _, file := range included {
 		//inc, err := ReadFile(file)
 		fullname := filepath.Join(basedir, file)
 		incraw, err := os.ReadFile(fullname)
