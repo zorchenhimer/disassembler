@@ -53,7 +53,7 @@ All identifiers and non-string options are case-insensitive.
 | `CommentColumn`| int    | Column to start the inline comments.  Default is `20`. |
 | `CommentCol`   | int    | Alias of `CommentColumn` |
 | `Comments`     | ident  | Options are `None`, `Standard`, and `Full`.  `None` omits all comments, `Standard` outputs defined comments, & `Full` outputs defined comments as well as address and raw byte data for each instruction. |
-| `Include`      | string | Additional configuration files to include.  Included files can only contain `Bank` blocks. |
+| `Include`      | string | Additional configuration files to include.  Included files can only contain `Bank` blocks.  Accepts directories and file globs. |
 | `Input`        | string | Default input file. |
 | `Labels`       | list   | List of labels in the global space (eg, zero page & main system RAM.) |
 | `MlbOutput`    | string | Output file to write Mesen labels. |
