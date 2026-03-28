@@ -17,7 +17,14 @@ is allowed, and Bank blocks can be repeated for as many banks the rom has.
 
 Each block starts with the type name and contains directives wrapped in curly
 braces.  Some directives expect a list of further blocks that are wrapped in
-square braces.  For example:
+square braces.
+
+Comments start with a double forward slash and continue to the end of the
+current line.  There are no multi-line comments.
+
+Hexadecimal numbers are specified with a preceding `0x` or `$`.
+
+## Example Config
 
     Global {
         Input     "StudyBox.bin"
@@ -26,17 +33,54 @@ square braces.  For example:
         Architecture 6502
         Comments Full
 
+        Include "bank_saveram.cfg"
+
+        Windows [
+            { Name "save_ram";  start $6000; size $2000; init "bank_saveram" }
+            { Name "prg_low";   start $8000; size $4000; }
+            { Name "prg_fixed"; start $C000; size $4000; init "bank_0F_fixed" }
+        ]
+
         Labels [
-            { Address $30; Name "Argument_A"; Size 2; }
-            { Address $32; Name "Argument_B"; Size 2; }
-            { Address $34; Name "Argument_C"; Size 2; }
+            { Address $2000; Name "PpuControl_2000"; }
+            { Address $2001; Name "PpuMask_2001"; }
+            { Address $2002; Name "PpuStatus_2002"; }
+            { Address $2003; Name "OamAddr_2003"; }
+            { Address $2004; Name "OamData_2004"; }
+            { Address $2005; Name "PpuScroll_2005"; }
+            { Address $2006; Name "PpuAddr_2006"; }
+            { Address $2007; Name "PpuData_2007"; }
         ]
     }
 
-Comments start with a double forward slash and continue to the end of the
-current line.  There are no multi-line comments.
+    Bank {
+        Name    "bank_00"
+        Output  "bank_00.asm"
+        Offset  $0000
+        Address $8000
+        Size    $4000
 
-Hexadecimal numbers are specified with a preceding `0x` or `$`.
+        Labels [
+            { address $8000; name "RESET"; }
+        ]
+
+        Ranges [
+            { start $FFFA; end $FFFF; type addrs; name "Vectors"; }
+        ]
+    }
+
+    Bank {
+        Name   "bank_0F_fixed"
+        Output "bank_0F.asm"
+
+        Offset  $8000
+        Address $C000
+        Size    $4000
+
+        Windows [
+            { address $C024; window "prg_low"; bank "bank_00"; }
+        ]
+    }
 
 ## Config Options
 
