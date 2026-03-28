@@ -181,5 +181,11 @@ func (dec *decoder) NewData(addr uint, raw []byte, stride int, display types.Ran
 		}
 	}
 
+	if dd.Type == types.Range_Addresses {
+		for _, addr := range dd.Data {
+			dec.lm.SetLabel(types.NewLabel(uint(addr), fmt.Sprintf("L%04X", addr)))
+		}
+	}
+
 	return dd
 }

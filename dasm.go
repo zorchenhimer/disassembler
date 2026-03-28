@@ -215,6 +215,7 @@ func FromConfig(cfg *types.Config) error {
 
 		// ranges, specifically
 		lm.Init()
+		lm.ActivateBank(bank.Name, bank.Address)
 		for index := uint(0); index < bank.Size; {
 			// index into raw
 			offset  := index + bank.Offset
@@ -313,6 +314,9 @@ func FromConfig(cfg *types.Config) error {
 		if err != nil {
 			return err
 		}
+
+		lm.Init()
+		lm.ActivateBank(bank.Name, bank.Address)
 
 		// output labels
 		if bank.NoDasm {
