@@ -50,18 +50,8 @@ func (c *Config) Verify() error {
 			bank.Input = c.Global.Input
 		}
 
-		hasBankWindows = len(bank.CfgWindows) > 0
-		if hasGlobalWindows && len(bank.CfgWindows) == 0 && !bank.NoDasm {
-			// don't warn if a global window init's to this bank.
-			init := false
-			for _, gwin := range c.Global.Windows {
-				if gwin.Init == bank.Name {
-					init = true
-				}
-			}
-			if !init {
-				fmt.Printf("Warning: Bank %s has no window definitions\n", bank.Name)
-			}
+		if !hasBankWindows && len(bank.CfgWindows) > 0{
+			hasBankWindows = true
 		}
 
 		for _, win := range bank.CfgWindows {
