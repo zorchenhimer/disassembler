@@ -15,8 +15,6 @@ import (
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
 
-var verbose bool
-
 func FromConfig(cfg *types.Config) error {
 	inputs := cfg.GetInputs()
 	raws := make(map[string][]byte)
@@ -254,8 +252,6 @@ func FromConfig(cfg *types.Config) error {
 
 	}
 
-	verbose = false
-
 	if cfg.Global.Output != "" {
 		err := os.MkdirAll(filepath.Dir(cfg.Global.Output), 0777)
 		if err != nil {
@@ -448,10 +444,3 @@ func FromConfig(cfg *types.Config) error {
 	return nil
 }
 
-func vb(format string, args ...any) {
-	if !verbose {
-		return
-	}
-
-	fmt.Printf(format+"\n", args...)
-}
