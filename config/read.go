@@ -62,6 +62,7 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 	for _, file := range included {
 		//inc, err := ReadFile(file)
 		fullname := filepath.Join(basedir, file)
+		fmt.Println(file)
 		incraw, err := os.ReadFile(fullname)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", file, err)
