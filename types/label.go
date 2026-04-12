@@ -31,6 +31,12 @@ type Label struct {
 	ParamSize uint
 
 	References int
+
+	isAuto bool
+}
+
+func (l Label) String() string {
+	return fmt.Sprintf("%s @ $%04X", l.Name, l.Address)
 }
 
 func NewLabel(address uint, name string) *Label {

@@ -147,7 +147,7 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0xFB: &Instruction{0xFB, 1, 0, false, false, Inline_None, "jump_arg_a"},
 	0xFC: &Instruction{0xFC, 2, 0,  true,  true, Inline_None, "get_palette_color"},
 	0xFD: &Instruction{0xFD, 0, 0, false, false, Inline_None, "halt_FD"},
-	0xFE: &Instruction{0xFE, 4, 0, false, false, Inline_None, "draw_rom_char"},
+	0xFE: &Instruction{0xFE, 4, 0, false, false, Inline_Word, "draw_rom_char"}, // inline is read in VM_ExecuteOpcode
 	0xFF: &Instruction{0xFF, 7, 0,  true, false, Inline_None, "break_engine"},
 }
 

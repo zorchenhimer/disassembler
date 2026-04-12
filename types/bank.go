@@ -176,26 +176,26 @@ func (b *Bank) verify() error {
 	return nil
 }
 
-func (b *Bank) GetLabel(address uint) *Label {
-	if lbl, ok := b.Labels[address]; ok {
-		return lbl
-	}
-	return nil
-}
+//func (b *Bank) GetLabel(address uint) *Label {
+//	if lbl, ok := b.Labels[address]; ok {
+//		return lbl
+//	}
+//	return nil
+//}
 
-func (b *Bank) SetLabel(lbl *Label) *Label {
-	if !(b.Address <= lbl.Address && lbl.Address < b.Address + b.Size) {
-		return nil
-	}
-
-	if l, ok := b.Labels[lbl.Address]; ok {
-		if l.Name == "" {
-			l.Name = lbl.Name
-		}
-		return l
-	}
-
-	b.Labels[lbl.Address] = lbl
-	return lbl
-}
+//func (b *Bank) SetLabel(lbl *Label) *Label {
+//	if !(b.Address <= lbl.Address && lbl.Address < b.Address + b.Size) {
+//		return nil
+//	}
+//
+//	if l, ok := b.Labels[lbl.Address]; ok {
+//		if l.Name == "" {
+//			l.Name = lbl.Name
+//		}
+//		return l
+//	}
+//
+//	b.Labels[lbl.Address] = lbl
+//	return lbl
+//}
 

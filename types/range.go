@@ -38,6 +38,21 @@ func (r *Range) Duplicate() *Range {
 	}
 }
 
+
+func (a *Range) Split(address uint) *Range {
+	b := a.Duplicate()
+
+	a.Size = address - a.Address
+	a.End = address - 1
+
+	b.Address = address
+	b.Size -= a.Size
+	b.Name = ""
+	b.Comment = ""
+
+	return b
+}
+
 type RangeType int
 
 const (

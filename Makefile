@@ -5,6 +5,9 @@ win: bin/dasm.exe
 run: all
 	bin/dasm testdata/sbx.cfg
 
+test: all
+	bin/dasm testdata/sbx_script.cfg
+
 clean:
 	-rm bin/* testdata/*.asm
 

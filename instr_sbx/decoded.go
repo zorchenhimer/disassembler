@@ -13,6 +13,8 @@ type Opcode struct {
 	RawInline []byte
 	Inline    string
 
+	//vars []uint
+
 	comment []string
 }
 
@@ -109,30 +111,85 @@ func (op *Opcode) InsertNewlineAfter() bool {
 	}
 }
 
-/*
-*/
-
 func (op *Opcode) ParamSize() uint {
 	return 0
 }
 
+/*
+*/
+
 type StackData struct {
 	Address uint
-	Value   int
+	Values  []uint
+
+	Type types.RangeType
+	Display types.RangeDisplay
+	Stride int
 
 	comment []string
 }
 
-func (sd *StackData) Asm(line int, lm types.LabelManager) (uint, string, string) {
-	comment := ""
-	if len(sd.comment) > line {
-		comment = sd.comment[line]
+func (dd *StackData) ArgStr(lm types.LabelManager, offset int) string {
+	vals := []string{}
+	for i := offset; i < len(dd.Values) && i < offset + dd.Stride; i++ {
+		dat := dd.Values[i]
+
+		if dd.Type == types.Range_Addresses {
+			var lbl *types.Label
+			lbl = lm.SetLabel(types.NewLabel(dat, fmt.Sprintf("L%04X", dat)))
+			if lbl.Address != dat {
+				offset := dat - lbl.Address
+				vals = append(vals, fmt.Sprintf("%s+%d", lbl.Name, offset))
+			} else {
+				vals = append(vals, fmt.Sprintf("%s", lbl.Name))
+			}
+
+		} else {
+
+			var intFmt string
+			switch dd.Display {
+			case types.Display_Binary:
+				intFmt = "%%%08b"
+
+			case types.Display_Decimal:
+				intFmt = "%d"
+
+			default: // types.Display_Hexadecimal
+				if dd.Type == types.Range_Words {
+					intFmt = "$%04X"
+				} else {
+					intFmt = "$%02X"
+				}
+			}
+			vals = append(vals, fmt.Sprintf(intFmt, dat))
+		}
 	}
 
-	if line == 0 {
-		return 0, fmt.Sprintf("%d", sd.Value), comment
+	return strings.Join(vals, ", ")
+}
+
+func (dd *StackData) Asm(line int, lm types.LabelManager) (uint, string, string) {
+	// value offset
+	offs := line * dd.Stride
+	argstr := dd.ArgStr(lm, offs)
+
+	// byte offset
+	if dd.Type == types.Range_Words || dd.Type == types.Range_Addresses {
+		offs *= 2
 	}
-	return 0, "", comment
+
+	return uint(offs), dd.Op() + " " + argstr, ""
+}
+
+func (dd *StackData) Op() string {
+	switch dd.Type {
+	case types.Range_Words:
+		return ".word"
+	case types.Range_Addresses:
+		return ".addr"
+	default:
+		return ".byte"
+	}
 }
 
 func (sd *StackData) InsertNewlineAfter() bool {
@@ -140,15 +197,29 @@ func (sd *StackData) InsertNewlineAfter() bool {
 }
 
 func (sd *StackData) Length() uint {
-	return 1
+	width := 1
+	if sd.Type == types.Range_Words || sd.Type == types.Range_Addresses {
+		width = 2
+	}
+	return uint(len(sd.Values)*width)
 }
 
 // TODO: inline comments
 func (sd *StackData) LineCount() int {
-	if len(sd.comment) > 1 {
-		return len(sd.comment)
+	if len(sd.Values) < sd.Stride {
+		return 1
 	}
-	return 1
+
+	if sd.Stride < 1 {
+		sd.Stride = 1
+	}
+
+	count := len(sd.Values) / sd.Stride
+	if len(sd.Values) % sd.Stride != 0 {
+		count++
+	}
+
+	return count
 }
 
 func (sd *StackData) ParamSize() uint {
@@ -164,5 +235,12 @@ func (sd *StackData) Prep(lm types.LabelManager) {
 }
 
 func (sd *StackData) RawStr(line int) string {
-	return fmt.Sprintf("%02X", sd.Value)
+	//vals := []string{}
+	//for _, v := range sd.Values {
+	//	vals = append(vals, fmt.Sprintf("%02X", v))
+	//}
+	//return fmt.Sprintf("%v", sd.Values)
+	//start := sd.Stride*ln
+	//end := start + sd.Stride
+	return ""
 }

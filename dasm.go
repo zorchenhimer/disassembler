@@ -166,49 +166,52 @@ func FromConfig(cfg *types.Config) error {
 		*/
 
 		// Split ranges
-		for _, rng := range bank.CfgRanges {
-			if rng.Name != "" {
+
+		// current_range
+		// foreach address
+		//		if current_range.address > address
+		//			current_range = nil
+		//		if current_range != nil
+		//			ranges[addr] = current_range
+		//		if !label
+		//			continue
+		//		if !range
+		//			continue
+		//		if label.address != address // multi-byte labels
+		//			continue
+		//		if label.address == range.address
+		//			continue
+		//		split
+
+		var current_range *types.Range
+		for i := bank.Address; i < bank.Address + bank.Size; i++ {
+			if current_range != nil && current_range.End < i {
+				current_range = nil
+			}
+
+			if current_range != nil {
+				bank.Ranges[i] = current_range
+			}
+
+			lbl := bank.Labels[i]
+			if lbl == nil {
+				continue
+			}
+			if lbl.Address != i {
 				continue
 			}
 
-			var lbl *types.Label
-			var last *types.Label
-			var crng *types.Range = rng // current range
-			for i := uint(0); i < rng.Size; i++ {
-				l := bank.Labels[i+rng.Address]
-				split := false
-				if lbl == nil && l != nil && i != 0 {
-					// found first label
-					split = true
-					lbl = l
-				} else if lbl != nil && l != lbl {
-					// found new label
-					split = true
-					lbl = l
-				}
-
-				// Don't split if we find the same label that just split the range.
-				if l == last {
-					split = false
-				}
-				last = l
-
-				if split {
-					prng := crng
-					crng = crng.Duplicate()
-
-					prng.Size = i+rng.Address-prng.Address
-					prng.End = i+rng.Address-1
-
-					crng.Address = i+rng.Address
-					crng.Size -= prng.Size
-					crng.Name = ""
-					crng.Comment = ""
-				}
-
-				// reassign ranges
-				bank.Ranges[i+rng.Address] = crng
+			rng := bank.Ranges[i]
+			if rng == nil {
+				continue
 			}
+
+			if lbl.Address == rng.Address {
+				continue
+			}
+
+			current_range = rng.Split(i)
+			bank.Ranges[i] = current_range
 		}
 
 		// ranges, specifically
@@ -249,7 +252,6 @@ func FromConfig(cfg *types.Config) error {
 
 			index += rng.Size
 		}
-
 	}
 
 	if cfg.Global.Output != "" {
@@ -354,7 +356,7 @@ func FromConfig(cfg *types.Config) error {
 
 			dec := bank.Decoded[addr]
 			if dec == nil {
-				panic(fmt.Sprintf("[%s] %04X+%04X (%X) how in the fuck?",
+				panic(fmt.Sprintf("[%s] %04X <= %04X <= %X how in the fuck?",
 					bank.Name, bank.Address, addr, bank.Address + bank.Size))
 			}
 

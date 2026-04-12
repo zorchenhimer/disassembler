@@ -9,6 +9,8 @@ import (
 type decoder struct {
 	lm types.LabelManager
 	autoVars bool
+	bankAddr uint
+	bankSize uint
 }
 
 func NewDecoder(lm types.LabelManager, autoVars bool) types.Decoder {
@@ -28,7 +30,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 	if raw[0] & 0x80 != 0x80 {
 		return &StackData{
 			Address: addr,
-			Value:  int(uint(raw[0])),
+			Values:  []uint{uint(raw[0])},
 		}
 	}
 
@@ -66,6 +68,9 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		}
 
 		op.RawInline = raw[1:3]
+		lbladdr := uint(raw[1]) | (uint(raw[2])<<8)
+		dec.lm.SetLabel(types.NewLabel(lbladdr, fmt.Sprintf("L%04X", lbladdr)))
+		//op.vars = append(op.vars, lbladdr)
 
 	case Inline_CountDefault, Inline_CountNoDefault:
 		// needs at least one count byte and and one inline word
@@ -88,10 +93,31 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 }
 
 func (dec *decoder) NewData(addr uint, raw []byte, stride int, display types.RangeDisplay, rngType types.RangeType, rtsLabels bool) types.AsmLine {
-	return nil
+	sd := &StackData{
+		Address: addr,
+		Values: []uint{},
+		Display: display,
+		Stride: stride,
+		Type: rngType,
+	}
+
+	if sd.Type == types.Range_Words || sd.Type == types.Range_Addresses {
+		for i := 0; i < len(raw); i+=2 {
+			if i+1 >= len(raw) {
+				break
+			}
+			sd.Values = append(sd.Values, uint(raw[i]) | (uint(raw[i+1]) << 8))
+		}
+	} else {
+		for i := 0; i < len(raw); i++ {
+			sd.Values = append(sd.Values, uint(raw[i]))
+		}
+	}
+
+	return sd
 }
 
 func (dec *decoder) SetBank(addr uint, size uint) {
-	// don't do anything here
-	return
+	dec.bankAddr = addr
+	dec.bankSize = size
 }
