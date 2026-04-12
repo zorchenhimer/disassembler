@@ -103,6 +103,7 @@ func (r *Range) Verify(begin, end uint) error {
 
 	if strings.TrimSpace(r.Comment) != "" {
 		lines := []string{}
+		r.Comment = strings.ReplaceAll(strings.ReplaceAll(r.Comment, "\r", ""), "\\n", "\n")
 		for _, line := range strings.Split(r.Comment, "\n") {
 			lines = append(lines, strings.TrimSpace(line))
 		}
