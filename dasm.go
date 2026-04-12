@@ -11,7 +11,7 @@ import (
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_6502"
-	//"git.zorchenhimer.com/Zorchenhimer/dasm/instr_sbx"
+	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_sbx"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
 
@@ -54,7 +54,7 @@ func FromConfig(cfg *types.Config) error {
 		//decoder = instr6502.NewDecoderUnofficial(lm)
 		return fmt.Errorf("Full6502 is not implemented yet")
 	case types.Arch_SbxScript:
-		return fmt.Errorf("SBX script is not implemented yet")
+		decoder = instrsbx.NewDecoder(lm, cfg.Global.AutoVars)
 	default:
 		return fmt.Errorf("unknown architecture")
 	}

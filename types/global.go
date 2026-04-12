@@ -28,9 +28,9 @@ func (g *ConfigGlobal) verify() error {
 		return fmt.Errorf("Input missing")
 	}
 
-	if g.Architecture != Arch_6502 {
-		return fmt.Errorf("Only Architecture 6502 is supported for now.")
-	}
+	//if g.Architecture != Arch_6502 {
+	//	return fmt.Errorf("Only Architecture 6502 is supported for now.")
+	//}
 
 	for _, lbl := range g.Labels {
 		err := lbl.Verify(0x0000, 0xFFFF)
