@@ -69,15 +69,19 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 	}
 
 	// Label that aligns with the OP code
+	anon_lbl := 0
 	if b1 != nil && b1.Name != "" {
 		if !comment && !f.lastNewline {
 			fmt.Fprintln(f.w, "")
 		}
 		name := b1.Name
+		nl := "\n"
 		if name == ":" {
 			name = ""
+			nl = ""
+			anon_lbl = 1
 		}
-		fmt.Fprintf(f.w, "%s:\n", name)
+		fmt.Fprintf(f.w, "%s:%s", name, nl)
 	}
 
 	// Labels for the arguments (if they exist)
@@ -118,7 +122,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 		// the configured columns.
 		ln := ""
 		if asm != "" {
-			ln = strings.Repeat(" ", f.AsmCol) + asm
+			ln = strings.Repeat(" ", f.AsmCol-anon_lbl) + asm
 		}
 
 		if comment != "" {
