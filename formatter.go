@@ -63,7 +63,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 				if len(c) > 0 && c[0] == ';' {
 					c = c[1:]
 				}
-				fmt.Fprintln(f.w, ";", c)
+				fmt.Fprintln(f.w, strings.TrimRight("; "+c, " \t"))
 			}
 		}
 	}
