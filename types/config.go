@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"strings"
+	"path/filepath"
 )
 
 type Config struct {
@@ -48,6 +49,28 @@ func (c *Config) Verify() error {
 			return fmt.Errorf("Bank missing input file")
 		} else if bank.Input == "" && c.Global.Input != "" {
 			bank.Input = c.Global.Input
+		}
+
+		fileInVars := map[string]string{
+			"name": bank.Name,
+		}
+
+		fileOutVars := map[string]string{
+			"dir": filepath.Dir(bank.Input),
+			"base": filepath.Base(bank.Input)[:len(filepath.Base(bank.Input))-len(filepath.Ext(bank.Input))],
+			"name": bank.Name,
+		}
+
+		for key, val := range fileOutVars {
+			if strings.Contains(bank.Output, "{"+key+"}") {
+				bank.Output = strings.ReplaceAll(bank.Output, "{"+key+"}", val)
+			}
+		}
+
+		for key, val := range fileInVars {
+			if strings.Contains(bank.Input, "{"+key+"}") {
+				bank.Input = strings.ReplaceAll(bank.Input, "{"+key+"}", val)
+			}
 		}
 
 		if !hasBankWindows && len(bank.CfgWindows) > 0{
