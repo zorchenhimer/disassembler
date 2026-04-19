@@ -175,3 +175,6 @@ func (i Instruction) String() string {
 	return "unknown"
 }
 
+func (i *Instruction) StatName() string {
+	return fmt.Sprintf("0x%02X %s", i.Opcode, i.Name)
+}

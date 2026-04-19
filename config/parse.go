@@ -139,7 +139,7 @@ func (p *parser) parseGlobal() error {
 
 		prev := itm
 		switch strings.ToLower(itm.val) {
-		case "input", "mlboutput", "include", "output":
+		case "input", "mlboutput", "include", "output", "statoutput":
 			itm = p.next()
 			if itm.typ != lex_String {
 				return parseError(itm, "%s expects a string", prev.val)
@@ -157,6 +157,8 @@ func (p *parser) parseGlobal() error {
 				p.config.Global.Include = append(p.config.Global.Include, itm.val)
 			case "output":
 				p.config.Global.Output = itm.val
+			case "statoutput":
+				p.config.Global.StatOutput = itm.val
 			}
 
 		case "architecture":

@@ -36,6 +36,10 @@ func (i *Instruction) ArgSize() int {
 	return i.argLength
 }
 
+func (i *Instruction) StatName() string {
+	return i.name +" "+ i.addrMode.String()
+}
+
 type AddrMode int
 
 const (
@@ -53,6 +57,39 @@ const (
 	AddrMode_ZeroPageX
 	AddrMode_ZeroPageY
 )
+
+func (m AddrMode) String() string {
+	switch m {
+	case AddrMode_Absolute:
+		return "Absolute"
+	case AddrMode_AbsoluteX:
+		return "Absolute X"
+	case AddrMode_AbsoluteY:
+		return "Absolute Y"
+	case AddrMode_Accumulator:
+		return "Accumulator"
+	case AddrMode_Immediate:
+		return "Immediate"
+	case AddrMode_Implied:
+		return "Implied"
+	case AddrMode_Indirect:
+		return "Indirect"
+	case AddrMode_IndirectX:
+		return "Indirect X"
+	case AddrMode_IndirectY:
+		return "Indirect Y"
+	case AddrMode_Relative:
+		return "Relative"
+	case AddrMode_ZeroPage:
+		return "Zero Page"
+	case AddrMode_ZeroPageX:
+		return "Zero Page X"
+	case AddrMode_ZeroPageY:
+		return "Zero Page Y"
+	}
+
+	return "Unknown"
+}
 
 var AddressModeFormats map[AddrMode]string = map[AddrMode]string{
 	AddrMode_Absolute:    "{{arg}}",

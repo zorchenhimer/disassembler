@@ -20,6 +20,14 @@ func NewDecoder(lm types.LabelManager, autoVars bool) types.Decoder {
 	}
 }
 
+func (dec *decoder) InstrNames() []string {
+	names := []string{}
+	for _, instr := range Instructions {
+		names = append(names, instr.StatName())
+	}
+	return names
+}
+
 // returned line is the opcode an any inline values.  stack arguments are elsewhere.
 func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 	if len(raw) == 0 {

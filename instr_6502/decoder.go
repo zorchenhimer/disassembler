@@ -34,6 +34,14 @@ type decoder struct {
 	bankSize uint
 }
 
+func (dec *decoder) InstrNames() []string {
+	names := []string{}
+	for _, instr := range Instr_6502 {
+		names = append(names, instr.StatName())
+	}
+	return names
+}
+
 func (dec *decoder) SetBank(addr uint, size uint) {
 	dec.bankAddr = addr
 	dec.bankSize = size

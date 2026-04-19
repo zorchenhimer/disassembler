@@ -28,6 +28,10 @@ type DecodedInstr struct {
 	comment []string
 }
 
+func (di *DecodedInstr) StatName() string {
+	return di.Instr.StatName()
+}
+
 func (di *DecodedInstr) ParamSize() uint {
 	return di.paramSize
 }

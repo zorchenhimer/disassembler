@@ -18,6 +18,10 @@ type Opcode struct {
 	comment []string
 }
 
+func (op *Opcode) StatName() string {
+	return op.Instr.StatName()
+}
+
 func (op *Opcode) Asm(line int, lm types.LabelManager) (uint, string, string) {
 	comment := ""
 	if len(op.comment) >= line+1 {

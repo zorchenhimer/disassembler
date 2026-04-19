@@ -1,5 +1,11 @@
 .PHONY: all clean run win
 
+SRC = config/*.go \
+	  instr_6502/*.go \
+	  instr_sbx/*.go \
+	  types/*.go \
+	  stats/*.go
+
 all: bin/dasm
 win: bin/dasm.exe
 run: all
@@ -11,8 +17,8 @@ test: all
 clean:
 	-rm bin/* testdata/*.asm
 
-bin/dasm: cmd/main.go *.go config/*.go instr_6502/*.go instr_sbx/*.go types/*.go
+bin/dasm: cmd/main.go *.go $(SRC)
 	go build -o $@ $<
 
-bin/dasm.exe: cmd/main.go *.go config/*.go instr_6502/*.go instr_sbx/*.go types/*.go
+bin/dasm.exe: cmd/main.go *.go $(SRC)
 	GOOS=windows GOARCH=amd64 go build -o $@ $<

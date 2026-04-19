@@ -9,6 +9,7 @@ type ConfigGlobal struct {
 	Input     string
 	MlbOutput string
 	Output    string // ASM output for labels
+	StatOutput string
 
 	Comments     CommentLevel
 	Architecture ArchitectureType

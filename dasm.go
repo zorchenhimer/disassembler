@@ -8,14 +8,17 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sort"
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_6502"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_sbx"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
+	"git.zorchenhimer.com/Zorchenhimer/dasm/stats"
 )
 
 func FromConfig(cfg *types.Config) error {
+	st := stats.New()
 	inputs := cfg.GetInputs()
 	raws := make(map[string][]byte)
 	for _, filename := range inputs {
@@ -59,14 +62,22 @@ func FromConfig(cfg *types.Config) error {
 		return fmt.Errorf("unknown architecture")
 	}
 
+	for _, name := range decoder.InstrNames() {
+		for file, _ := range raws {
+			st.Add(file, name)
+		}
+	}
+
 	for _, bank := range cfg.Banks {
 		if bank.NoDasm {
 			continue
 		}
 
+		inputName := cfg.Global.Input
 		var raw []byte
 		if bank.Input != "" {
 			raw = raws[bank.Input]
+			inputName = bank.Input
 		} else if cfg.Global.Input != "" {
 			raw = raws[cfg.Global.Input]
 		} else {
@@ -142,6 +153,9 @@ func FromConfig(cfg *types.Config) error {
 				bank.Decoded[address+i] = instr
 			}
 
+			if in, ok := instr.(stats.Data); ok {
+				st.Incr(inputName, in.StatName())
+			}
 			index += instr.Length()
 		}
 
@@ -251,6 +265,13 @@ func FromConfig(cfg *types.Config) error {
 			}
 
 			index += rng.Size
+		}
+	}
+
+	if cfg.Global.StatOutput != "" {
+		err := writeStats(cfg.Global.StatOutput, st)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -441,6 +462,33 @@ func FromConfig(cfg *types.Config) error {
 				fmt.Fprintln(mlb, strings.Join(parts, ":"))
 			}
 		}
+	}
+
+	return nil
+}
+
+func writeStats(filename string, st *stats.Set) error {
+	fmt.Println("")
+	output, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	keys := []string{}
+	width := 0
+	for key, _ := range st.Global {
+		keys = append(keys, key)
+		if len(key) > width {
+			width = len(key)
+		}
+	}
+	sort.Strings(keys)
+	width += 3
+
+	for _, key := range keys {
+		fmt.Fprintf(output, "%*s %d\n",
+			width*-1, key, st.Global[key])
 	}
 
 	return nil
