@@ -28,7 +28,7 @@ func (op *Opcode) Asm(line int, lm types.LabelManager) (uint, string, string) {
 	case Inline_NullTerm:
 		return 0, fmt.Sprintf("%s \"%s\"", op.Instr.Name, op.Inline), comment
 
-	case Inline_CountDefault, Inline_CountNoDefault, Inline_Word:
+	case Inline_Count, Inline_Word, Inline_Label:
 		return 0, fmt.Sprintf("%s %s", op.Instr.Name, op.Inline), comment
 
 	default:
@@ -69,12 +69,16 @@ func (op *Opcode) Prep(lm types.LabelManager) {
 		}
 		op.Inline = strings.Join(chars, "")
 
-	case Inline_Word:
+	case Inline_Label:
 		val := uint(op.RawInline[0]) | (uint(op.RawInline[1]) << 8)
 		lbl := lm.SetLabel(types.NewLabel(val, fmt.Sprintf("L%04X", val)))
 		op.Inline = lbl.Name
 
-	case Inline_CountDefault, Inline_CountNoDefault:
+	case Inline_Word:
+		val := uint(op.RawInline[0]) | (uint(op.RawInline[1]) << 8)
+		op.Inline = fmt.Sprintf("$%04X", val)
+
+	case Inline_Count:
 		vals := []string{}
 		vals = append(vals, fmt.Sprintf("%d", op.RawInline[0]))
 		for i := 1; i < len(op.RawInline); i += 2 {

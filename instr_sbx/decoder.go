@@ -60,7 +60,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 			return nil
 		}
 
-	case Inline_Word:
+	case Inline_Word, Inline_Label:
 		if len(raw) < 3 {
 			fmt.Printf("Not enough bytes for inline word for %s at %04X",
 				op.Instr.Name, op.Address)
@@ -68,11 +68,13 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		}
 
 		op.RawInline = raw[1:3]
-		lbladdr := uint(raw[1]) | (uint(raw[2])<<8)
-		dec.lm.SetLabel(types.NewLabel(lbladdr, fmt.Sprintf("L%04X", lbladdr)))
+		if op.Instr.Inline == Inline_Label {
+			lbladdr := uint(raw[1]) | (uint(raw[2])<<8)
+			dec.lm.SetLabel(types.NewLabel(lbladdr, fmt.Sprintf("L%04X", lbladdr)))
+		}
 		//op.vars = append(op.vars, lbladdr)
 
-	case Inline_CountDefault, Inline_CountNoDefault:
+	case Inline_Count:
 		// needs at least one count byte and and one inline word
 		if len(raw) < 4 {
 			fmt.Printf("Not enough bytes for inline word list for %s at %04X",
