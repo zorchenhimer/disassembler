@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sort"
 
 	//"git.zorchenhimer.com/Zorchenhimer/dasm/config"
 	"git.zorchenhimer.com/Zorchenhimer/dasm/instr_6502"
@@ -269,7 +268,7 @@ func FromConfig(cfg *types.Config) error {
 	}
 
 	if cfg.Global.StatOutput != "" {
-		err := writeStats(cfg.Global.StatOutput, st)
+		err := st.WriteToFile(cfg.Global.StatOutput)
 		if err != nil {
 			return err
 		}
@@ -462,33 +461,6 @@ func FromConfig(cfg *types.Config) error {
 				fmt.Fprintln(mlb, strings.Join(parts, ":"))
 			}
 		}
-	}
-
-	return nil
-}
-
-func writeStats(filename string, st *stats.Set) error {
-	fmt.Println("")
-	output, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer output.Close()
-
-	keys := []string{}
-	width := 0
-	for key, _ := range st.Global {
-		keys = append(keys, key)
-		if len(key) > width {
-			width = len(key)
-		}
-	}
-	sort.Strings(keys)
-	width += 3
-
-	for _, key := range keys {
-		fmt.Fprintf(output, "%*s %d\n",
-			width*-1, key, st.Global[key])
 	}
 
 	return nil
