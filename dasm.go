@@ -84,6 +84,10 @@ func FromConfig(cfg *types.Config) error {
 			continue
 		}
 
+		if bank.Size > uint(len(raw)) {
+			bank.Size = uint(len(raw))
+		}
+
 		if bank.Size == 0 {
 			bank.Size = uint(len(raw[bank.Offset:]))
 		}
