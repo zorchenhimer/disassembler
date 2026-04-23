@@ -42,12 +42,13 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 		return nil, err
 	}
 
-	//if nested && len(cfg.Global.Include) > 0 {
-	//	return nil, fmt.Errorf("Nested includes not allowed")
-	//}
+	if nested && len(cfg.Global.Include) > 0 {
+		return nil, fmt.Errorf("Nested includes not allowed")
+	}
 
 	included := []string{}
 	for _, item := range cfg.Global.Include {
+		item = filepath.Join(basedir, item)
 		if strings.HasSuffix(item, string(os.PathSeparator)) {
 			item += "*.cfg"
 		}
@@ -60,15 +61,13 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 	}
 
 	for _, file := range included {
-		//inc, err := ReadFile(file)
-		fullname := filepath.Join(basedir, file)
 		fmt.Println(file)
-		incraw, err := os.ReadFile(fullname)
+		incraw, err := os.ReadFile(file)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", file, err)
 		}
 
-		inc, err := realRead(filepath.Dir(fullname), incraw, true)
+		inc, err := realRead(filepath.Dir(file), incraw, true)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", file, err)
 		}
