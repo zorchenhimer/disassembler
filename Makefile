@@ -1,6 +1,9 @@
 .PHONY: all clean run win
 
-SRC = config/*.go \
+SRC = dasm.go \
+	  formatter.go \
+	  labelmanager.go \
+	  config/*.go \
 	  instr_6502/*.go \
 	  instr_sbx/*.go \
 	  types/*.go \
