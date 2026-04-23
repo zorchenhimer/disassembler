@@ -76,6 +76,10 @@ func (op *Opcode) Prep(lm types.LabelManager) {
 	case Inline_Label:
 		val := uint(op.RawInline[0]) | (uint(op.RawInline[1]) << 8)
 		lbl := lm.SetLabel(types.NewLabel(val, fmt.Sprintf("L%04X", val)))
+		if lbl == nil {
+			fmt.Printf("nil at $%04X label for $%04X\n%#v\n", op.Address, val, op)
+			break
+		}
 		op.Inline = lbl.Name
 
 	case Inline_Word:
@@ -84,10 +88,18 @@ func (op *Opcode) Prep(lm types.LabelManager) {
 
 	case Inline_Count:
 		vals := []string{}
+		if len(op.RawInline) < 3 {
+			fmt.Printf("missing inline bytes for Inline_Count type at $%04X\n", op.Address)
+			break
+		}
 		vals = append(vals, fmt.Sprintf("%d", op.RawInline[0]))
-		for i := 1; i < len(op.RawInline); i += 2 {
+		for i := 1; i+1 < len(op.RawInline); i += 2 {
 			val := uint(op.RawInline[i]) | (uint(op.RawInline[i+1]) << 8)
 			lbl := lm.SetLabel(types.NewLabel(val, fmt.Sprintf("L%04X", val)))
+			if lbl == nil {
+				fmt.Printf("nil at $%04X label for $%04X\n%#v\n", op.Address, val, op)
+				break
+			}
 			vals = append(vals, lbl.Name)
 		}
 

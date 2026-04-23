@@ -91,11 +91,17 @@ func FromConfig(cfg *types.Config) error {
 		// instruction decoding
 		lm.Init()
 		lm.ActivateBank(bank.Name, bank.Address)
+
+		if cfg.Global.Architecture == types.Arch_SbxScript {
+			_ = lm.SetLabel(types.NewLabel(0x6002, "ScriptStart"))
+		}
+
 		for index := uint(0); index < bank.Size ; {
 			// index into raw
 			offset  := index + bank.Offset
 			// CPU address
 			address := index + bank.Address
+
 			if offset >= uint(len(raw)) {
 				return fmt.Errorf("offset(%X;%d) past end of input(%X;%d)",
 					offset, offset, len(raw), len(raw))

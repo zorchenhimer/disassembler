@@ -44,7 +44,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 
 	instr, ok := Instructions[raw[0]]
 	if !ok {
-		panic(fmt.Sprintf("Missing SBX Script opcode %02X", raw[0]))
+		panic(fmt.Sprintf("Missing SBX Script opcode %02X\n", raw[0]))
 	}
 
 	op := &Opcode{
@@ -63,14 +63,14 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 			}
 		}
 		if !found_end {
-			fmt.Printf("no end found for %s at %04X",
+			fmt.Printf("no end found for %s at %04X\n",
 				op.Instr.Name, op.Address)
 			return nil
 		}
 
 	case Inline_Word, Inline_Label:
 		if len(raw) < 3 {
-			fmt.Printf("Not enough bytes for inline word for %s at %04X",
+			fmt.Printf("Not enough bytes for inline word for %s at %04X\n",
 				op.Instr.Name, op.Address)
 			return nil
 		}
@@ -85,14 +85,14 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 	case Inline_Count:
 		// needs at least one count byte and and one inline word
 		if len(raw) < 4 {
-			fmt.Printf("Not enough bytes for inline word list for %s at %04X",
+			fmt.Printf("Not enough bytes for inline word list for %s at %04X\n",
 				op.Instr.Name, op.Address)
 			return nil
 		}
 
 		count := int(raw[1])
 		if len(raw[2:]) < count*2 {
-			fmt.Printf("Not enough bytes for %d inline words for %s at %04X",
+			fmt.Printf("Not enough bytes for %d inline words for %s at %04X\n",
 				count, op.Instr.Name, op.Address)
 			return nil
 		}
