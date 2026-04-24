@@ -48,10 +48,10 @@ func realRead(basedir string, raw []byte, nested bool) (*types.Config, error) {
 
 	included := []string{}
 	for _, item := range cfg.Global.Include {
-		item = filepath.Join(basedir, item)
 		if strings.HasSuffix(item, string(os.PathSeparator)) {
 			item += "*.cfg"
 		}
+		item = filepath.Join(basedir, item)
 
 		files, err := filepath.Glob(item)
 		if err != nil {
