@@ -96,7 +96,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 				count, op.Instr.Name, op.Address)
 			return nil
 		}
-		op.RawInline = raw[2:(count*2)+2]
+		op.RawInline = raw[1:(count*2)+2]
 	}
 
 	return op

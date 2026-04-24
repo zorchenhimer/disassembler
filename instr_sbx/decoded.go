@@ -92,7 +92,7 @@ func (op *Opcode) Prep(lm types.LabelManager) {
 			fmt.Printf("missing inline bytes for Inline_Count type at $%04X\n", op.Address)
 			break
 		}
-		vals = append(vals, fmt.Sprintf("%d", op.RawInline[0]))
+		vals = append(vals, fmt.Sprintf("[%d]", op.RawInline[0]))
 		for i := 1; i+1 < len(op.RawInline); i += 2 {
 			val := uint(op.RawInline[i]) | (uint(op.RawInline[i+1]) << 8)
 			lbl := lm.SetLabel(types.NewLabel(val, fmt.Sprintf("L%04X", val)))
