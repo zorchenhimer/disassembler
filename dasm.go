@@ -67,6 +67,8 @@ func FromConfig(cfg *types.Config) error {
 		}
 	}
 
+	fmt.Println("Reading input")
+
 	for _, bank := range cfg.Banks {
 		if bank.NoDasm {
 			continue
@@ -83,6 +85,8 @@ func FromConfig(cfg *types.Config) error {
 			fmt.Println("bank %s has no input.  skipping.", bank.Name)
 			continue
 		}
+
+		fmt.Println(" ", inputName)
 
 		if bank.Size > uint(len(raw)) {
 			bank.Size = uint(len(raw))
@@ -277,6 +281,8 @@ func FromConfig(cfg *types.Config) error {
 		}
 	}
 
+	fmt.Println("Writing output")
+
 	if cfg.Global.StatOutput != "" {
 		err := st.WriteToFile(cfg.Global.StatOutput)
 		if err != nil {
@@ -331,6 +337,10 @@ func FromConfig(cfg *types.Config) error {
 				fmt.Printf("Warning: Not writing disassembly for bank %q anywhere!\n", bank.Name)
 			}
 			continue
+		}
+
+		if bank.Input != "-" {
+			fmt.Println(" ", bank.Input)
 		}
 
 		err := os.MkdirAll(filepath.Dir(bank.Output), 0777)
