@@ -122,7 +122,7 @@ func (op *Opcode) RawStr(line int) string {
 
 func (op *Opcode) InsertNewlineAfter() bool {
 	switch op.Instr.Opcode {
-	case 0x86, 0xC1, 0xAA, 0xAC, 0xFB, // return, jump_switch, long_jump, long_return, jump_arg_a
+	case 0x86, 0xC1, 0xAA, 0xAC, 0xFB, 0x84, // return, jump_switch, long_jump, long_return, jump_arg_a, jump_abs
 		 0x81, 0x9B, 0xF2, 0xF3, 0xF4, // halts
 		 0xF5, 0xF6, 0xF7, 0xF8, 0xFD:
 		return true
