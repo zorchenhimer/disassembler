@@ -133,5 +133,9 @@ func (r *Range) Verify(begin, end uint) error {
 		}
 	}
 
+	if (r.Type == Range_Addresses || r.Type == Range_Words) && r.Size % 2 != 0 {
+		return fmt.Errorf("Word range is an odd length: %#v", r)
+	}
+
 	return nil
 }
