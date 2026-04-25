@@ -86,6 +86,8 @@ func FromConfig(cfg *types.Config) error {
 			continue
 		}
 
+		st.SetSize(inputName, len(raw))
+
 		fmt.Println(" ", inputName)
 
 		if bank.Size > uint(len(raw)) {
