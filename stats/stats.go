@@ -7,34 +7,52 @@ type Data interface {
 	StatName() string
 }
 
-type Group map[string]int
+type Group struct {
+	Size int
+	Items map[string]int
+}
+
+func NewGroup() *Group {
+	return &Group{
+		Items: make(map[string]int),
+	}
+}
 
 type Set struct {
-	Global Group
-	Groups map[string]Group
+	Global *Group
+	Groups map[string]*Group
 }
 
 func New() *Set {
 	return &Set{
-		Global: Group{},
-		Groups: make(map[string]Group),
+		Global: NewGroup(),
+		Groups: make(map[string]*Group),
 	}
 }
 
 func (s *Set) Incr(group, name string) {
-	s.Global[name]++
+	s.Global.Items[name]++
 
 	if _, ok := s.Groups[group]; !ok {
-		s.Groups[group] = Group{}
+		s.Groups[group] = NewGroup()
 	}
-	s.Groups[group][name]++
+	s.Groups[group].Items[name]++
 }
 
 func (s *Set) Add(group, name string) {
 	if _, ok := s.Groups[group]; !ok {
-		s.Groups[group] = Group{}
+		s.Groups[group] = NewGroup()
 	}
 
-	s.Global[name] = 0
-	s.Groups[group][name] = 0
+	s.Global.Items[name] = 0
+	s.Groups[group].Items[name] = 0
+}
+
+func (s *Set) SetSize(group string, size int) {
+	if _, ok := s.Groups[group]; !ok {
+		s.Groups[group] = NewGroup()
+	}
+
+	s.Global.Size += size
+	s.Groups[group].Size = size
 }
