@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"path/filepath"
 )
@@ -39,11 +40,15 @@ func (c *Config) Verify() error {
 	hasBankWindows := false
 	hasGlobalWindows := len(c.Global.Windows) > 0
 
+	bankNames := make(map[string]int)
+
 	for _, bank := range c.Banks {
 		err = bank.verify()
 		if err != nil {
 			return err
 		}
+
+		bankNames[bank.Name]++
 
 		if bank.Input == "" && c.Global.Input == "" {
 			return fmt.Errorf("Bank missing input file")
@@ -55,6 +60,12 @@ func (c *Config) Verify() error {
 			"name": bank.Name,
 		}
 
+		for key, val := range fileInVars {
+			if strings.Contains(bank.Input, "{"+key+"}") {
+				bank.Input = strings.ReplaceAll(bank.Input, "{"+key+"}", val)
+			}
+		}
+
 		fileOutVars := map[string]string{
 			"dir": filepath.Dir(bank.Input),
 			"base": filepath.Base(bank.Input)[:len(filepath.Base(bank.Input))-len(filepath.Ext(bank.Input))],
@@ -64,12 +75,6 @@ func (c *Config) Verify() error {
 		for key, val := range fileOutVars {
 			if strings.Contains(bank.Output, "{"+key+"}") {
 				bank.Output = strings.ReplaceAll(bank.Output, "{"+key+"}", val)
-			}
-		}
-
-		for key, val := range fileInVars {
-			if strings.Contains(bank.Input, "{"+key+"}") {
-				bank.Input = strings.ReplaceAll(bank.Input, "{"+key+"}", val)
 			}
 		}
 
@@ -93,6 +98,21 @@ func (c *Config) Verify() error {
 				return fmt.Errorf("WindowDef for window %q not found", win.Window)
 			}
 		}
+	}
+
+	dupes := []string{}
+	for name, count := range bankNames {
+		if count > 1 {
+			dupes = append(dupes, name)
+		}
+	}
+
+	if len(dupes) > 0 {
+		fmt.Fprintln(os.Stderr, "Banks have duplicate names:")
+		for _, name := range dupes {
+			fmt.Fprintln(os.Stderr, " ", name)
+		}
+		return fmt.Errorf("Bank name error")
 	}
 
 	if hasBankWindows && !hasGlobalWindows {

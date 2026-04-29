@@ -268,6 +268,10 @@ func FromConfig(cfg *types.Config) error {
 				continue
 			}
 
+			if int(offset+rng.Size) > len(raw) {
+				return fmt.Errorf("Range goes beyond end of data: %#v", rng)
+			}
+
 			dd := decoder.NewData(address, raw[offset:offset+rng.Size], int(rng.Stride),
 						   rng.Display, rng.Type, rng.RtsLabels)
 

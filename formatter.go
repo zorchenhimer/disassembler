@@ -115,7 +115,7 @@ func (f *Formatter) Write(address uint, line types.AsmLine) error {
 			if rawstr != "" {
 				rawstr = " "+rawstr
 			}
-			fullcom = fmt.Sprintf("; %04X%s", address+offs, rawstr)
+			fullcom = fmt.Sprintf("; [%04X]%s", address+offs, rawstr)
 		}
 
 		// Align the asm, comments, and verbose comments to
