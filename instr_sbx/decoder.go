@@ -2,6 +2,8 @@ package instrsbx
 
 import (
 	"fmt"
+	"os"
+	"slices"
 
 	"git.zorchenhimer.com/Zorchenhimer/dasm/types"
 )
@@ -11,12 +13,18 @@ type decoder struct {
 	autoVars bool
 	bankAddr uint
 	bankSize uint
+
+	ast   []AstNode // output
+	stack *Stack[AstNode] // working vals
 }
 
 func NewDecoder(lm types.LabelManager, autoVars bool) types.Decoder {
 	return &decoder{
 		lm: lm,
 		autoVars: autoVars,
+
+		ast:   []AstNode{},
+		stack: NewStack[AstNode](),
 	}
 }
 
@@ -34,12 +42,27 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		return nil
 	}
 
+	if addr == 0x6000 {
+		return &StackData{
+			Address: addr,
+			Values: []uint{uint(raw[0]) | (uint(raw[1])<<8)},
+			Type: types.Range_Words,
+		}
+	}
+
 	// value high enough for opcode?
 	if raw[0] & 0x80 != 0x80 {
-		return &StackData{
+		ret := &StackData{
 			Address: addr,
 			Values:  []uint{uint(raw[0])},
 		}
+
+		dec.stack.Push(&AstStackArg{
+			Data: ret,
+			Value: ret.Values[0],
+		})
+
+		return ret
 	}
 
 	instr, ok := Instructions[raw[0]]
@@ -99,6 +122,38 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		op.RawInline = raw[1:(count*2)+2]
 	}
 
+	node := &AstInstruction{ Opcode: op, lm: dec.lm }
+	for i := 0; i < op.Instr.WordArgs; i++ {
+		n, err := dec.stack.Pop()
+		if err != nil {
+			fmt.Printf("Opcode pops too much off stack: %#v\n", op)
+			return op
+		}
+
+		node.Arguments = append(node.Arguments, n)
+	}
+
+	for i := 0; i < op.Instr.StringArgs; i++ {
+		n, err := dec.stack.Pop()
+		if err != nil {
+			fmt.Printf("Opcode pops too much off stack: %#v\n", op)
+			return op
+		}
+
+		node.Arguments = append(node.Arguments, n)
+	}
+
+	if len(node.Arguments) > 0 {
+		slices.Reverse(node.Arguments)
+	}
+
+	if op.Instr.ReturnWord || op.Instr.ReturnString {
+		dec.stack.Push(node)
+	} else {
+		dec.ast = append(dec.ast, node)
+	}
+
+	op.Prep(dec.lm)
 	return op
 }
 
@@ -130,4 +185,37 @@ func (dec *decoder) NewData(addr uint, raw []byte, stride int, display types.Ran
 func (dec *decoder) SetBank(addr uint, size uint) {
 	dec.bankAddr = addr
 	dec.bankSize = size
+}
+
+func (dec *decoder) DumpAst(filename string) error {
+	output, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	for _, node := range dec.ast {
+		lbl := dec.lm.GetLabel(node.Address())
+		lblStr := ""
+		if lbl != nil {
+			lblStr = "\n"+lbl.Name+": "
+		}
+		fmt.Fprintf(output, "%s%s\n", lblStr, node.String())
+	}
+
+	st := dec.stack.Array()
+
+	if len(st) > 0 {
+		fmt.Println("left over stack in", filename)
+		fmt.Fprintln(output, "\nleft over stack:")
+		for _, node := range st {
+			fmt.Fprintln(output, " ", node.DbgString())
+		}
+	}
+
+	//fmt.Printf("stack: %#v\n", dec.stack)
+	//fmt.Println("stack.bottom:", dec.stack.bottom)
+	dec.ast = []AstNode{}
+	dec.stack = NewStack[AstNode]()
+	return nil
 }

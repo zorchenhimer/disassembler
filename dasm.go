@@ -285,6 +285,13 @@ func FromConfig(cfg *types.Config) error {
 
 			index += rng.Size
 		}
+
+		if cfg.Global.Architecture == types.Arch_SbxScript {
+			err := decoder.DumpAst(bank.Input+".ast")
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	fmt.Println("Writing output")

@@ -7,4 +7,5 @@ type Decoder interface {
 	SetBank(addr uint, size uint)
 
 	InstrNames() []string
+	DumpAst(filename string) error
 }

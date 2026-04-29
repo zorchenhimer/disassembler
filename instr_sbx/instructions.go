@@ -7,7 +7,7 @@ import (
 var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0x80: &Instruction{0x80, 0, 0, false, false, Inline_None,  "beep"},
 	0x81: &Instruction{0x81, 0, 0, false, false, Inline_None,  "halt_81"},
-	0x82: &Instruction{0x82, 0, 0, false, false, Inline_None,  "tape_nmi_shenanigans"},
+	0x82: &Instruction{0x82, 0, 0, false, false, Inline_None,  "play_tape_audio"},
 	0x83: &Instruction{0x83, 0, 0, false, false, Inline_None,  "tape_wait"},
 	0x84: &Instruction{0x84, 0, 0, false, false, Inline_Label, "jump_abs"},
 	0x85: &Instruction{0x85, 0, 0, false, false, Inline_Label, "call_abs"},
@@ -25,8 +25,8 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0x90: &Instruction{0x90, 0, 2,  true, false, Inline_None, "strings_not_equal"},
 	0x91: &Instruction{0x91, 0, 2,  true, false, Inline_None, "string_less_than"},
 	0x92: &Instruction{0x92, 0, 2,  true, false, Inline_None, "string_less_than_equal"},
-	0x93: &Instruction{0x93, 0, 2,  true, false, Inline_None, "strings_greater_than_equal"},
-	0x94: &Instruction{0x94, 0, 2,  true, false, Inline_None, "strings_greater_than"},
+	0x93: &Instruction{0x93, 0, 2,  true, false, Inline_None, "string_greater_than_equal"},
+	0x94: &Instruction{0x94, 0, 2,  true, false, Inline_None, "string_greater_than"},
 	0x95: &Instruction{0x95, 1, 0, false, false, Inline_None, "tape_nmi_shenanigans_set"},
 	0x96: &Instruction{0x96, 0, 0, false, false, Inline_Word, "set_word_4E"},
 	0x97: &Instruction{0x97, 2, 0, false, false, Inline_None, "load_two_screens"},
@@ -35,7 +35,7 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0x9A: &Instruction{0x9A, 0, 0, false, false, Inline_None, "disable_audio"},
 	0x9B: &Instruction{0x9B, 0, 0, false, false, Inline_None, "halt_9B"},
 	0x9C: &Instruction{0x9C, 0, 0, false, false, Inline_None, "toggle_44FE"},
-	0x9D: &Instruction{0x9D, 2, 0, false, false, Inline_None, "something_tape"},
+	0x9D: &Instruction{0x9D, 2, 0, false, false, Inline_None, "play_tape_audio_once"},
 	0x9E: &Instruction{0x9E, 2, 0, false, false, Inline_None, "draw_and_show_screen"},
 	0x9F: &Instruction{0x9F, 6, 0, false, false, Inline_None, "copy_tiles"},
 
@@ -63,21 +63,21 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0xB4: &Instruction{0xB4, 0, 0, false, false, Inline_None,     "indirect_copy_471A_4E"},
 	0xB5: &Instruction{0xB5, 0, 0, false, false, Inline_None,     "string_copy"},
 	0xB6: &Instruction{0xB6, 0, 0, false, false, Inline_None,     "word4E_to_word471A"},
-	0xB7: &Instruction{0xB7, 0, 0, false, false, Inline_Label,    "push_var"},
-	0xB8: &Instruction{0xB8, 0, 0, false, false, Inline_Word,     "push_word"},
-	0xB9: &Instruction{0xB9, 0, 0, false, false, Inline_Label,    "push_var_indexed"},
-	0xBA: &Instruction{0xBA, 0, 0, false, false, Inline_Label,    "push_data_indirect"},
-	0xBB: &Instruction{0xBB, 0, 0, false, false, Inline_NullTerm, "push_data"},
-	0xBC: &Instruction{0xBC, 0, 0, false, false, Inline_Label,    "push_string_from_table"},
-	0xBD: &Instruction{0xBD, 0, 0, false, false, Inline_Label,    "pop_into"},
-	0xBE: &Instruction{0xBE, 0, 0, false, false, Inline_Label,    "write_to_table"},
+	0xB7: &Instruction{0xB7, 0, 0,  true, false, Inline_Label,    "push_var"}, // non-vm return
+	0xB8: &Instruction{0xB8, 0, 0,  true, false, Inline_Word,     "push_word"}, // non-vm return
+	0xB9: &Instruction{0xB9, 1, 0,  true, false, Inline_Label,    "push_var_indexed"}, // non-vm return
+	0xBA: &Instruction{0xBA, 0, 0, false,  true, Inline_Label,    "push_data_indirect"}, // non-vm return
+	0xBB: &Instruction{0xBB, 0, 0, false,  true, Inline_NullTerm, "push_data"}, // non-vm return
+	0xBC: &Instruction{0xBC, 1, 0, false,  true, Inline_Label,    "push_string_from_table"}, // non-vm return
+	0xBD: &Instruction{0xBD, 1, 0, false, false, Inline_Label,    "pop_into"}, // non-vm arg
+	0xBE: &Instruction{0xBE, 2, 0, false, false, Inline_Label,    "write_to_table"},
 	0xBF: &Instruction{0xBF, 1, 0, false, false, Inline_Label,    "jump_not_zero"},
 
 	0xC0: &Instruction{0xC0, 1, 0, false, false, Inline_Label, "jump_zero"},
 	0xC1: &Instruction{0xC1, 1, 0, false, false, Inline_Count, "jump_switch"},
 	0xC2: &Instruction{0xC2, 1, 0,  true, false, Inline_None,  "equals_zero"},
-	0xC3: &Instruction{0xC3, 2, 0,  true, false, Inline_None,  "and_a_b"},
-	0xC4: &Instruction{0xC4, 2, 0,  true, false, Inline_None,  "or_a_b"},
+	0xC3: &Instruction{0xC3, 2, 0,  true, false, Inline_None,  "and"},
+	0xC4: &Instruction{0xC4, 2, 0,  true, false, Inline_None,  "or"},
 	0xC5: &Instruction{0xC5, 2, 0,  true, false, Inline_None,  "equal"},
 	0xC6: &Instruction{0xC6, 2, 0,  true, false, Inline_None,  "not_equal"},
 	0xC7: &Instruction{0xC7, 2, 0,  true, false, Inline_None,  "less_than"},
@@ -97,10 +97,10 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0xD4: &Instruction{0xD4, 3, 0, false, false, Inline_None, "set_cursor_location"},
 	0xD5: &Instruction{0xD5, 1, 0, false, false, Inline_None, "wait_for_tape"},
 	0xD6: &Instruction{0xD6, 1, 1, false, false, Inline_None, "truncate_string"},
-	0xD7: &Instruction{0xD7, 1, 1, false, false, Inline_None, "trim_string_end"},
-	0xD8: &Instruction{0xD8, 1, 1, false, false, Inline_None, "trim_string_start"},
+	0xD7: &Instruction{0xD7, 1, 1, false,  true, Inline_None, "trim_string_end"},
+	0xD8: &Instruction{0xD8, 1, 1, false,  true, Inline_None, "trim_string_start"},
 	0xD9: &Instruction{0xD9, 2, 1, false, false, Inline_None, "substring"},
-	0xDA: &Instruction{0xDA, 1, 0, false, false, Inline_None, "int_to_string"},
+	0xDA: &Instruction{0xDA, 1, 0, false,  true, Inline_None, "int_to_string"},
 	0xDB: &Instruction{0xDB, 3, 0, false, false, Inline_None, "no_bg_wait"},
 	0xDC: &Instruction{0xDC, 5, 0, false, false, Inline_None, "set_attr"},
 	0xDD: &Instruction{0xDD, 5, 0, false, false, Inline_None, "fill_box"},
@@ -116,7 +116,7 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0xE6: &Instruction{0xE6, 1, 0, false, false, Inline_None,  "tape_nmi_setup"},
 	0xE7: &Instruction{0xE7, 7, 0, false, false, Inline_None,  "draw_metasprite"},
 	0xE8: &Instruction{0xE8, 1, 0, false, false, Inline_None,  "setup_tape_nmi"}, // what is the difference with 0xE6???
-	0xE9: &Instruction{0xE9, 0, 0, false, false, Inline_Label, "loop_start"},
+	0xE9: &Instruction{0xE9, 2, 0, false, false, Inline_Label, "loop_start"},
 	0xEA: &Instruction{0xEA, 0, 0, false, false, Inline_Label, "string_write_to_table"},
 	0xEB: &Instruction{0xEB, 4, 0, false, false, Inline_None,  "draw_overlay"},
 	0xEC: &Instruction{0xEC, 2, 0, false, false, Inline_None,  "scroll"},
@@ -139,7 +139,7 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0xFC: &Instruction{0xFC, 2, 0,  true, false, Inline_None,  "get_palette_color"},
 	0xFD: &Instruction{0xFD, 0, 0, false,  true, Inline_None,  "halt_FD"},
 	0xFE: &Instruction{0xFE, 4, 0, false, false, Inline_Label, "draw_rom_char"}, // inline is read in VM_ExecuteOpcode
-	0xFF: &Instruction{0xFF, 7, 0,  true, false, Inline_None,  "break_engine"},
+	0xFF: &Instruction{0xFF, 0, 0, false, false, Inline_None,  "break_engine"},
 }
 
 type InlineType int

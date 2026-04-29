@@ -197,3 +197,7 @@ func (dec *decoder) NewData(addr uint, raw []byte, stride int, display types.Ran
 
 	return dd
 }
+
+func (dec *decoder) DumpAst(filename string) error {
+	return fmt.Errorf("no ast for 6502")
+}
