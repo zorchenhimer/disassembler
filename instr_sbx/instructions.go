@@ -19,7 +19,7 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0x8B: &Instruction{0x8B, 1, 0, false, false, Inline_None,  "unknown_8B"},
 	0x8C: &Instruction{0x8C, 0, 1,  true, false, Inline_None,  "string_length"},
 	0x8D: &Instruction{0x8D, 0, 1,  true, false, Inline_None,  "string_to_int"},
-	0x8E: &Instruction{0x8E, 0, 2, false, false, Inline_None,  "string_concat"},
+	0x8E: &Instruction{0x8E, 0, 2, false,  true, Inline_None,  "string_concat"},
 	0x8F: &Instruction{0x8F, 0, 2,  true, false, Inline_None,  "strings_equal"},
 
 	0x90: &Instruction{0x90, 0, 2,  true, false, Inline_None, "strings_not_equal"},

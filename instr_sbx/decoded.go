@@ -18,6 +18,24 @@ type Opcode struct {
 	comment []string
 }
 
+func (op *Opcode) GoString() string {
+	var instr string = "<nil>"
+	if op.Instr != nil {
+		instr = op.Instr.Name
+	}
+	inline := []string{}
+	for _, b := range op.RawInline {
+		inline = append(inline, fmt.Sprintf("$%02X", b))
+	}
+
+	return fmt.Sprintf("&instrsbx.Opcode{Address:$%04X Instr:%s RawInline:[%s] Inline:%q}",
+		op.Address,
+		instr,
+		strings.Join(inline, " "),
+		op.Inline,
+	)
+}
+
 func (op *Opcode) StatName() string {
 	return op.Instr.StatName()
 }
@@ -84,7 +102,11 @@ func (op *Opcode) Prep(lm types.LabelManager) {
 
 	case Inline_Word:
 		val := uint(op.RawInline[0]) | (uint(op.RawInline[1]) << 8)
-		op.Inline = fmt.Sprintf("$%04X", val)
+		if val > 0xFF {
+			op.Inline = fmt.Sprintf("$%04X", val)
+		} else {
+			op.Inline = fmt.Sprintf("%d", val)
+		}
 
 	case Inline_Count:
 		vals := []string{}

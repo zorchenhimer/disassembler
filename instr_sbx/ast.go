@@ -23,7 +23,7 @@ type AstInstruction struct {
 
 func (n *AstInstruction) Address() uint {
 	if len(n.Arguments) > 0 {
-		return n.Arguments[len(n.Arguments)-1].Address()
+		return n.Arguments[0].Address()
 	}
 	return n.Opcode.Address
 }
@@ -44,12 +44,14 @@ func (n *AstInstruction) String() string {
 
 	if n.Opcode.Inline != "" {
 		switch n.Opcode.Instr.Opcode {
-		case 0xB7:
+		case 0xB7: // push_var
 			return ":"+n.Opcode.Inline
-		case 0xB8:
+		case 0xB8: // push_word
 			return n.Opcode.Inline
-		case 0xBB:
+		case 0xBB: // push_data
 			return fmt.Sprintf("%q", n.Opcode.Inline)
+		case 0xB9: // push_var_indexed
+			return fmt.Sprintf("%s[%s]", n.Opcode.Inline, strings.Join(args, " "))
 
 		default:
 			if n.Opcode.Instr.Inline == Inline_NullTerm {

@@ -127,7 +127,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		n, err := dec.stack.Pop()
 		if err != nil {
 			fmt.Printf("Opcode pops too much off stack: %#v\n", op)
-			return op
+			break
 		}
 
 		node.Arguments = append(node.Arguments, n)
@@ -137,7 +137,7 @@ func (dec *decoder) TryInstr(addr uint, raw []byte) types.AsmLine {
 		n, err := dec.stack.Pop()
 		if err != nil {
 			fmt.Printf("Opcode pops too much off stack: %#v\n", op)
-			return op
+			break
 		}
 
 		node.Arguments = append(node.Arguments, n)
