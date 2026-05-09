@@ -573,6 +573,11 @@ func (p *parser) parseLabels() ([]*types.Label, error) {
 				if val.typ != lex_String {
 					return nil, parseError(itm, "%s requires lex_String", key.val)
 				}
+
+				if strings.ToLower(itm.val) == "name" && strings.Contains(val.val, "\n") {
+					return nil, parseError(itm, "%s cannot contain newlines", itm.val)
+				}
+
 				str := strings.ReplaceAll(val.val, "\\n", "\n")
 				slc := []string{}
 				for _, s := range strings.Split(str, "\n") {
@@ -726,6 +731,9 @@ func (p *parser) parseRanges() ([]*types.Range, error) {
 				}
 
 				if strings.ToLower(key.val) == "name" {
+					if strings.Contains(val.val, "\n") {
+						return nil, parseError(itm, "%s cannot contain newlines", itm.val)
+					}
 					rng.Name = val.val
 				} else {
 					rng.Comment = val.val
