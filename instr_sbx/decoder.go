@@ -198,7 +198,7 @@ func (dec *decoder) DumpAst(filename string) error {
 		lbl := dec.lm.GetLabel(node.Address())
 		lblStr := ""
 		if lbl != nil {
-			lblStr = "\n"+lbl.Name+": "
+			lblStr = "\n"+lbl.Name+":\n"
 		}
 		fmt.Fprintf(output, "%s%s\n", lblStr, node.String())
 	}

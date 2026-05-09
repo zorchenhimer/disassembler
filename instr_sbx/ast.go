@@ -49,7 +49,7 @@ func (n *AstInstruction) String() string {
 		case 0xB8: // push_word
 			return n.Opcode.Inline
 		case 0xBB: // push_data
-			return fmt.Sprintf("%q", n.Opcode.Inline)
+			return fmt.Sprintf("\"%s\"", n.Opcode.Inline)
 		case 0xB9: // push_var_indexed
 			return fmt.Sprintf("%s[%s]", n.Opcode.Inline, strings.Join(args, " "))
 

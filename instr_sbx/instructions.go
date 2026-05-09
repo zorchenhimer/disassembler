@@ -31,7 +31,7 @@ var Instructions map[byte]*Instruction = map[byte]*Instruction{
 	0x96: &Instruction{0x96, 0, 0, false, false, Inline_Word, "set_word_4E"},
 	0x97: &Instruction{0x97, 2, 0, false, false, Inline_None, "load_two_screens"},
 	0x98: &Instruction{0x98, 1, 0, false, false, Inline_None, "unknown_98"},
-	0x99: &Instruction{0x99, 1, 0, false, false, Inline_None, "enable_audio"},
+	0x99: &Instruction{0x99, 1, 0, false, false, Inline_None, "enable_audio"},  // TODO: does this read a bunch of data from a pointer on the stack?
 	0x9A: &Instruction{0x9A, 0, 0, false, false, Inline_None, "disable_audio"},
 	0x9B: &Instruction{0x9B, 0, 0, false, false, Inline_None, "halt_9B"},
 	0x9C: &Instruction{0x9C, 0, 0, false, false, Inline_None, "toggle_44FE"},
